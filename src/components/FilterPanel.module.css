@@ -1,0 +1,64 @@
+.panel {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  position: sticky;
+  top: 88px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.item:hover {
+  background: var(--bg-primary);
+}
+
+.item.active {
+  background: rgba(245, 169, 184, 0.15);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+}
+
+.item.active .count {
+  background: var(--accent);
+  color: white;
+}

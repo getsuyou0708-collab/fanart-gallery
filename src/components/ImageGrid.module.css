@@ -1,0 +1,166 @@
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.item {
+  flex: 1 1 calc(25% - 16px);
+  min-width: 200px;
+  max-width: calc(25% - 16px);
+  animation: fadeUp 0.4s ease forwards;
+  opacity: 0;
+  cursor: grab;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.item:active {
+  cursor: grabbing;
+}
+
+.item.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+  width: 100%;
+}
+
+.emptyIcon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty p {
+  font-size: 16px;
+}
+
+/* 灯箱效果 */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.98);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lightboxImage {
+  max-width: 95vw;
+  max-height: 85vh;
+  object-fit: contain;
+  cursor: default;
+}
+
+.lightboxClose {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  color: black;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  border: none;
+  cursor: pointer;
+}
+
+.lightboxPrev,
+.lightboxNext {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: black;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lightboxPrev {
+  left: 20px;
+}
+
+.lightboxNext {
+  right: 20px;
+}
+
+.lightboxPrev:hover,
+.lightboxNext:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lightboxCounter {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  z-index: 100000;
+}
+
+.lightboxTags {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 60vw;
+}
+
+.tagWork,
+.tagCp {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.tagWork {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+}
+
+.tagCp {
+  background: rgba(245, 169, 184, 0.15);
+  color: var(--accent);
+}

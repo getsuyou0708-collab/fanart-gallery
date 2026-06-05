@@ -1,0 +1,246 @@
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  gap: 32px;
+}
+
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebarSection {
+  position: sticky;
+  top: 100px;
+}
+
+.sidebarTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.workList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.workItem:hover {
+  background: rgba(245, 169, 184, 0.1);
+  border-color: var(--accent);
+}
+
+.workItem.active {
+  background: var(--accent);
+  color: white;
+}
+
+.workItem .count {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.workItem.active .count {
+  opacity: 0.9;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 20px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: inline-block;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cpTags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cpTag {
+  padding: 4px 12px;
+  background: rgba(245, 169, 184, 0.15);
+  color: var(--accent);
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cpTag:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.cpTag.active {
+  background: var(--accent);
+  color: white;
+}
+
+.clearFilter {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: none;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.clearFilter:hover {
+  opacity: 1;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 封面展示页 */
+.coverPage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 99999;
+  transition: opacity 0.6s ease;
+}
+
+.coverPage.fadeOut {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.coverImage {
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+}
+
+.coverHint {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* 右侧固定搜索栏 */
+.searchFixed {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  width: 160px;
+  z-index: 100;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  box-shadow: 0 4px 20px var(--shadow);
+}
+
+@media (max-width: 768px) {
+  .page {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 8px;
+  }
+
+  .sidebarSection {
+    position: static;
+    flex-shrink: 0;
+  }
+
+  .workList {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .workItem {
+    padding: 8px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 12px;
+  }
+
+  .pageTitle {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .searchFixed {
+    position: static;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+}
