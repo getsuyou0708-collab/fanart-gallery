@@ -1,7 +1,7 @@
 [
   {
     "id": "art_1780563151496",
-    "title": "test",
+    "title": "test1",
     "filename": "fanart-gallery/art_1780563151496.jpg",
     "type": "image",
     "works": [
@@ -22,9 +22,7 @@
     "works": [
       "哇"
     ],
-    "cps": [
-      "庆"
-    ],
+    "cps": [],
     "tags": [],
     "order": 2,
     "createdAt": "2026-06-04T09:13:25.193Z"
