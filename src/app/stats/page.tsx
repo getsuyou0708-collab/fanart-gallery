@@ -249,7 +249,7 @@ export default function StatsPage() {
           <div className={styles.monthTopLabels}>
             <div className={styles.monthTopContainer}>
               {contributionData.monthPositions.map(({ month, weekIndex }) => {
-                const left = 24 + weekIndex * (cellSize + 3)
+                const left = weekIndex * (cellSize + 3)
                 return (
                   <span key={month} className={styles.monthTopLabel} style={{ left: `${left}px` }}>
                     {months[month - 1]}

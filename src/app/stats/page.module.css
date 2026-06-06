@@ -64,6 +64,7 @@
   display: flex;
   margin-bottom: 4px;
   align-items: center;
+  overflow: visible;
 }
 
 .weekDayColumn {
@@ -75,11 +76,12 @@
 }
 
 .monthTopContainer {
-  display: block;
+  display: flex;
+  gap: 3px;
+  flex: 1;
   overflow: visible;
   position: relative;
   height: 14px;
-  width: calc(53 * 17px);
 }
 
 .monthTopLabel {
