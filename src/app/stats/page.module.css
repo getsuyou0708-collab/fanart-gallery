@@ -76,14 +76,10 @@
 
 .monthTopContainer {
   display: flex;
-  gap: 3px;
+  justify-content: space-between;
   flex: 1;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.monthTopContainer::-webkit-scrollbar {
-  display: none;
+  overflow: visible;
+  padding-left: 3px;
 }
 
 .monthTopLabel {
