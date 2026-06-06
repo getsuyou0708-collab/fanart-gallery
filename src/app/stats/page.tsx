@@ -329,9 +329,8 @@ export default function StatsPage() {
           </div>
           {displayStatsData.map(stat => (
             <div key={stat.name} className={styles.tableRow}>
-              <span className={styles.colName}>{stat.name}</span>
-              <div className={styles.countCell}>
-                <span className={styles.colCount}>{stat.count}</span>
+              <div className={styles.nameCell}>
+                <span className={styles.colName}>{stat.name}</span>
                 {filterType === 'cp' && stat.worksArray.length > 0 && (
                   <div className={styles.worksTags}>
                     {stat.worksArray.map((work, i) => (
@@ -340,6 +339,7 @@ export default function StatsPage() {
                   </div>
                 )}
               </div>
+              <span className={styles.colCount}>{stat.count}</span>
               <div className={styles.colPercent}>
                 <div className={styles.percentBarContainer}>
                   <div
