@@ -222,7 +222,6 @@ export default function StatsPage() {
     return styles.level4
   }
 
-  const weekDays = ['', '一', '', '三', '', '五', '']
   const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
 
   if (loading) {
@@ -261,9 +260,9 @@ export default function StatsPage() {
           <div className={styles.graphContainer}>
             {/* 左侧星期标签 */}
             <div className={styles.weekDayColumn}>
-              {weekDays.map((day, i) => (
-                <div key={i} className={styles.weekDayLabel}>{day}</div>
-              ))}
+              <div className={styles.weekDayLabel}>一</div>
+              <div className={styles.weekDayLabel}>三</div>
+              <div className={styles.weekDayLabel}>五</div>
             </div>
 
             {/* 周网格 */}
