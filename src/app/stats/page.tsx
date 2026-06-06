@@ -248,9 +248,14 @@ export default function StatsPage() {
           {/* 顶部月份标签 */}
           <div className={styles.monthTopLabels}>
             <div className={styles.monthTopContainer}>
-              {months.map((month, idx) => (
-                <span key={idx} className={styles.monthTopLabel}>{month}</span>
-              ))}
+              {contributionData.monthPositions.map(({ month, weekIndex }) => {
+                const left = 24 + weekIndex * (cellSize + 3)
+                return (
+                  <span key={month} className={styles.monthTopLabel} style={{ left: `${left}px` }}>
+                    {months[month - 1]}
+                  </span>
+                )
+              })}
             </div>
           </div>
 

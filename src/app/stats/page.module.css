@@ -75,11 +75,11 @@
 }
 
 .monthTopContainer {
-  display: flex;
-  justify-content: space-between;
-  flex: 1;
+  display: block;
   overflow: visible;
-  padding-left: 3px;
+  position: relative;
+  height: 14px;
+  width: calc(53 * 17px);
 }
 
 .monthTopLabel {
@@ -88,6 +88,8 @@
   text-align: left;
   flex-shrink: 0;
   white-space: nowrap;
+  position: absolute;
+  top: 0;
 }
 
 .graphContainer {
