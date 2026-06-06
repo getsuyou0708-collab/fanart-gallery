@@ -98,7 +98,8 @@ export default function ManageClient({ artworks }: Props) {
       title: item.title,
       works: item.works,
       cps: item.cps,
-      tags: item.tags
+      tags: item.tags,
+      createdAt: item.createdAt.split('T')[0]
     })
   }
 
@@ -116,7 +117,8 @@ export default function ManageClient({ artworks }: Props) {
         title: editForm.title!,
         works: editForm.works || [],
         cps: editForm.cps || [],
-        tags: editForm.tags || []
+        tags: editForm.tags || [],
+        createdAt: editForm.createdAt ? new Date(editForm.createdAt).toISOString() : item.createdAt
       } : item
     )
 
@@ -200,13 +202,19 @@ export default function ManageClient({ artworks }: Props) {
             </div>
 
             {editingId === item.id ? (
-              <div className={styles.editForm}>
+                           <div className={styles.editForm}>
                 <input
                   type="text"
                   className={styles.editInput}
                   value={editForm.title}
                   onChange={e => setEditForm({ ...editForm, title: e.target.value })}
                   placeholder="标题"
+                />
+                <input
+                  type="date"
+                  className={styles.editInput}
+                  value={editForm.createdAt}
+                  onChange={e => setEditForm({ ...editForm, createdAt: e.target.value })}
                 />
                 <input
                   type="text"

@@ -5,12 +5,21 @@ export async function POST(req: NextRequest) {
   try {
     const { artworks } = await req.json()
 
-    // 更新 Supabase 中所有记录的 order
+    // 更新 Supabase 中所有记录的 order 和其他字段
     for (let i = 0; i < artworks.length; i++) {
       const artwork = artworks[i]
+      const updateData: any = { order: i + 1 }
+
+      // 如果提供了 title/works/cps/tags/createdAt，则一并更新
+      if (artwork.title !== undefined) updateData.title = artwork.title
+      if (artwork.works !== undefined) updateData.works = artwork.works
+      if (artwork.cps !== undefined) updateData.cps = artwork.cps
+      if (artwork.tags !== undefined) updateData.tags = artwork.tags
+      if (artwork.createdAt !== undefined) updateData.createdAt = artwork.createdAt
+
       const { error } = await supabase
         .from('artworks')
-        .update({ order: i + 1 })
+        .update(updateData)
         .eq('id', artwork.id)
 
       if (error) {
