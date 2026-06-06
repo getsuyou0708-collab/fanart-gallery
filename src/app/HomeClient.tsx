@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { GalleryData, Artwork } from '@/lib/types'
 import ImageGrid from '@/components/ImageGrid'
 import SearchBar from '@/components/SearchBar'
@@ -27,6 +28,7 @@ export default function HomeClient({ data, coverArtworkId }: Props) {
   const [selectedCP, setSelectedCP] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [orderedIds, setOrderedIds] = useState<string[]>([])
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     if (coverArtworkId) {
@@ -36,16 +38,19 @@ export default function HomeClient({ data, coverArtworkId }: Props) {
 
   // 从URL参数读取筛选状态
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const workParam = params.get('work')
-    const cpParam = params.get('cp')
+    const workParam = searchParams.get('work')
+    const cpParam = searchParams.get('cp')
     if (workParam) {
       setSelectedWork(decodeURIComponent(workParam))
+    } else {
+      setSelectedWork(null)
     }
     if (cpParam) {
       setSelectedCP(decodeURIComponent(cpParam))
+    } else {
+      setSelectedCP(null)
     }
-  }, [])
+  }, [searchParams])
 
   useEffect(() => {
     const ids = [...data.artworks]

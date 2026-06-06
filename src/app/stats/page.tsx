@@ -248,17 +248,12 @@ export default function StatsPage() {
         </div>
 
         <div className={styles.graphWrapper} ref={containerRef}>
-          {/* 顶部月份标签 */}
+                   {/* 顶部月份标签 */}
           <div className={styles.monthTopLabels}>
             <div className={styles.weekDayColumn}></div>
             <div className={styles.monthTopContainer}>
-              {contributionData.monthPositions.map(({ month }) => (
-                <div
-                  key={month}
-                  className={styles.monthTopLabel}
-                >
-                  {months[month - 1]}
-                </div>
+              {months.map((month, idx) => (
+                <span key={idx} className={styles.monthTopLabel}>{month}</span>
               ))}
             </div>
           </div>
