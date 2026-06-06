@@ -261,8 +261,12 @@ export default function StatsPage() {
             {/* 左侧星期标签 */}
             <div className={styles.weekDayColumn}>
               <div className={styles.weekDayLabel}>一</div>
+              <div className={styles.weekDayLabel}></div>
               <div className={styles.weekDayLabel}>三</div>
+              <div className={styles.weekDayLabel}></div>
               <div className={styles.weekDayLabel}>五</div>
+              <div className={styles.weekDayLabel}></div>
+              <div className={styles.weekDayLabel}></div>
             </div>
 
             {/* 周网格 */}
