@@ -142,11 +142,6 @@ export default function StatsPage() {
       const dayOfYear = Math.floor((firstDayOfMonth.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
       const weekIndex = Math.floor((padding + dayOfYear) / 7)
 
-      // 如果与上一个月份的 weekIndex 相同，跳过（避免重叠）
-      if (monthPositions.length > 0 && monthPositions[monthPositions.length - 1].weekIndex === weekIndex) {
-        continue
-      }
-
       monthPositions.push({ month, weekIndex })
     }
 
