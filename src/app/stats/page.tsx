@@ -112,7 +112,9 @@ export default function StatsPage() {
 
     // 补齐第一周前面的空白天
     const firstDayOfWeek = startDate.getDay()
-    for (let i = 0; i < (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1); i++) {
+    const padding = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+
+    for (let i = 0; i < padding; i++) {
       currentWeek.push({ date: '', count: -1, artworks: [] })
     }
 
@@ -132,20 +134,21 @@ export default function StatsPage() {
       weeks.push(currentWeek)
     }
 
-    // 计算月份位置 - 在周网格中找到每个月第一天的位置
+    // 计算月份位置 - 基于每个月第一天在网格中的实际周列位置
     const monthPositions: { month: number; weekIndex: number }[] = []
 
-    weeks.forEach((week, weekIndex) => {
-      week.forEach((day) => {
-        if (day.date && day.count >= 0) {
-          const month = parseInt(day.date.split('-')[1])
-          //找到该月的第一个有数据的日期
-          if (!monthPositions.find(m => m.month === month)) {
-            monthPositions.push({ month, weekIndex })
-          }
-        }
-      })
-    })
+    for (let month = 1; month <= 12; month++) {
+      const firstDayOfMonth = new Date(targetYear, month - 1, 1)
+      const dayOfYear = Math.floor((firstDayOfMonth.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      const weekIndex = Math.floor((padding + dayOfYear) / 7)
+
+      // 如果与上一个月份的 weekIndex 相同，跳过（避免重叠）
+      if (monthPositions.length > 0 && monthPositions[monthPositions.length - 1].weekIndex === weekIndex) {
+        continue
+      }
+
+      monthPositions.push({ month, weekIndex })
+    }
 
     const maxCount = Math.max(...allDays.map(d => d.count), 1)
 
