@@ -63,6 +63,7 @@
 .monthTopLabels {
   display: flex;
   margin-bottom: 4px;
+  align-items: center;
 }
 
 .weekDayColumn {
@@ -71,10 +72,10 @@
 }
 
 .monthTopContainer {
-  display: flex;
+  display: inline-flex;
   gap: 3px;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .monthTopLabel {
@@ -82,6 +83,7 @@
   color: var(--text-secondary);
   text-align: left;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .graphContainer {

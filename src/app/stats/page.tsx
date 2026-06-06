@@ -200,9 +200,14 @@ export default function StatsPage() {
 
   const handleDayClick = (day: DayData, e: React.MouseEvent) => {
     if (day.count > 0) {
-      setSelectedDay(day)
-      const rect = (e.target as HTMLElement).getBoundingClientRect()
-      setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top })
+      // 如果点击的是同一个日期，关闭tooltip
+      if (selectedDay?.date === day.date) {
+        setSelectedDay(null)
+      } else {
+        setSelectedDay(day)
+        const rect = (e.target as HTMLElement).getBoundingClientRect()
+        setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top })
+      }
     } else {
       setSelectedDay(null)
     }
