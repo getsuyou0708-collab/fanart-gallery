@@ -3,6 +3,8 @@ import FilterPanel from '@/components/FilterPanel'
 import HomeClient from '../../HomeClient'
 import styles from '@/app/work/[slug]/page.module.css'
 
+export const dynamic = 'force-dynamic'
+
 interface Props {
   params: { slug: string }
 }
