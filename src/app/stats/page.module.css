@@ -95,7 +95,7 @@
 
 .graphContainer {
   display: flex;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .weeksContainer {
