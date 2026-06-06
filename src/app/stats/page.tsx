@@ -247,7 +247,6 @@ export default function StatsPage() {
         <div className={styles.graphWrapper} ref={containerRef}>
                    {/* 顶部月份标签 */}
           <div className={styles.monthTopLabels}>
-            <div className={styles.weekDayColumn}></div>
             <div className={styles.monthTopContainer}>
               {months.map((month, idx) => (
                 <span key={idx} className={styles.monthTopLabel}>{month}</span>
@@ -256,17 +255,6 @@ export default function StatsPage() {
           </div>
 
           <div className={styles.graphContainer}>
-            {/* 左侧星期标签 */}
-            <div className={styles.weekDayColumn}>
-              <div className={styles.weekDayLabel}>一</div>
-              <div className={styles.weekDayLabel}></div>
-              <div className={styles.weekDayLabel}>三</div>
-              <div className={styles.weekDayLabel}></div>
-              <div className={styles.weekDayLabel}>五</div>
-              <div className={styles.weekDayLabel}></div>
-              <div className={styles.weekDayLabel}></div>
-            </div>
-
             {/* 周网格 */}
             <div className={styles.weeksContainer}>
               {contributionData.weeks.map((week, weekIndex) => (
