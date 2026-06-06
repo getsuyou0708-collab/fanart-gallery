@@ -132,17 +132,25 @@ export default function StatsPage() {
       weeks.push(currentWeek)
     }
 
-    // 计算月份位置
+    // 计算月份位置 -找到每个月第一天所在的周
     const monthPositions: { month: number; weekIndex: number }[] = []
-    weeks.forEach((week, weekIndex) => {
-      week.forEach(day => {
-        if (day.date && day.date.endsWith('-01')) {
-          const month = parseInt(day.date.split('-')[1])
-          if (!monthPositions.find(m => m.month === month)) {
+    allDays.forEach((day, dayIndex) => {
+      if (day.date && day.count >= 0) {
+        const dateParts = day.date.split('-')
+        const month = parseInt(dateParts[1])
+        const dayOfMonth = parseInt(dateParts[2])
+        const weekIndex = Math.floor(dayIndex / 7)
+
+        // 只记录每月第一天或第一周的数据
+        if (dayOfMonth === 1 || !monthPositions.find(m => m.month === month)) {
+          const existing = monthPositions.find(m => m.month === month)
+          if (existing) {
+            existing.weekIndex = weekIndex
+          } else {
             monthPositions.push({ month, weekIndex })
           }
         }
-      })
+      }
     })
 
     const maxCount = Math.max(...allDays.map(d => d.count), 1)
