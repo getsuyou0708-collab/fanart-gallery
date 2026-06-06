@@ -134,12 +134,16 @@ export default function StatsPage() {
 
     // 计算月份位置 -找到每个月第一天所在的周
     const monthPositions: { month: number; weekIndex: number }[] = []
+    const firstDayOfWeek = startDate.getDay()
+    const padding = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+
     allDays.forEach((day, dayIndex) => {
       if (day.date && day.count >= 0) {
         const dateParts = day.date.split('-')
         const month = parseInt(dateParts[1])
         const dayOfMonth = parseInt(dateParts[2])
-        const weekIndex = Math.floor(dayIndex / 7)
+        //减去填充天数得到正确的周索引
+        const weekIndex = Math.floor((dayIndex - padding) / 7)
 
         // 只记录每月第一天或第一周的数据
         if (dayOfMonth === 1 || !monthPositions.find(m => m.month === month)) {
