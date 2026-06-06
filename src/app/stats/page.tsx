@@ -41,8 +41,8 @@ export default function StatsPage() {
   }, [])
 
   const years = useMemo(() => {
-    //固定显示2023-2025 年
-    return ['2025', '2024', '2023']
+    // 固定显示 2023-2026 年
+    return ['2026', '2025', '2024', '2023']
   }, [data])
 
   useEffect(() => {
@@ -243,14 +243,11 @@ export default function StatsPage() {
           {/* 顶部月份标签 */}
           <div className={styles.monthTopLabels}>
             <div className={styles.monthTopContainer}>
-              {contributionData.monthPositions.map(({ month, weekIndex }) => {
-                const left = weekIndex * (cellSize + 3)
-                return (
-                  <span key={month} className={styles.monthTopLabel} style={{ left: `${left}px` }}>
-                    {months[month - 1]}
-                  </span>
-                )
-              })}
+              {contributionData.monthPositions.map(({ month, weekIndex }) => (
+                <span key={month} className={styles.monthTopLabel} style={{ gridColumn: weekIndex + 1 }}>
+                  {months[month - 1]}
+                </span>
+              ))}
             </div>
           </div>
 
