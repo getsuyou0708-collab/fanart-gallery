@@ -332,7 +332,7 @@ export default function StatsPage() {
           />
         </div>
 
-        <div className={styles.statsTable}>
+         <div className={styles.statsTable}>
           <div className={styles.tableHeader}>
             <span className={styles.colName}>{filterType === 'work' ? '作品' : 'CP'}</span>
             <span className={`${styles.colCount} ${styles.colHeader}`}>数量</span>
@@ -340,17 +340,17 @@ export default function StatsPage() {
           </div>
           {displayStatsData.map(stat => (
             <div key={stat.name} className={styles.tableRow}>
-              <div className={styles.nameCell}>
-                <span className={styles.colName}>{stat.name}</span>
+              <span className={styles.colName}>{stat.name}</span>
+              <div className={styles.countCell}>
+                <span className={styles.colCount}>{stat.count}</span>
                 {filterType === 'cp' && stat.worksArray.length > 0 && (
                   <div className={styles.worksTags}>
                     {stat.worksArray.map((work, i) => (
                       <span key={i} className={styles.workTag}>{work}</span>
                     ))}
-                 </div>
+                  </div>
                 )}
               </div>
-              <span className={styles.colCount}>{stat.count}</span>
               <div className={styles.colPercent}>
                 <div className={styles.percentBarContainer}>
                   <div
