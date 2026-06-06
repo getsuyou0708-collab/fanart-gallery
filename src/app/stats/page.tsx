@@ -337,11 +337,11 @@ export default function StatsPage() {
               <div className={styles.nameCell}>
                 <span className={styles.colName}>{stat.name}</span>
                 {filterType === 'cp' && stat.worksArray.length > 0 && (
-                  <div className={styles.worksTags}>
+                  <span className={styles.worksTagsInline}>
                     {stat.worksArray.map((work, i) => (
                       <span key={i} className={styles.workTag}>{work}</span>
                     ))}
-                  </div>
+                  </span>
                 )}
               </div>
               <span className={styles.colCount}>{stat.count}</span>
