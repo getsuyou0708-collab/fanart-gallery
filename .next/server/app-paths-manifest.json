@@ -1,18 +1,4 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/auth/route": "app/api/auth/route.js",
-  "/api/revalidate/route": "app/api/revalidate/route.js",
-  "/api/stats/route": "app/api/stats/route.js",
-  "/api/reorder/route": "app/api/reorder/route.js",
-  "/debug/page": "app/debug/page.js",
-  "/api/upload/route": "app/api/upload/route.js",
-  "/login/page": "app/login/page.js",
-  "/stats/page": "app/stats/page.js",
-  "/upload/page": "app/upload/page.js",
-  "/api/debug/route": "app/api/debug/route.js",
-  "/api/delete/route": "app/api/delete/route.js",
-  "/manage/page": "app/manage/page.js",
-  "/work/[slug]/page": "app/work/[slug]/page.js",
   "/page": "app/page.js",
-  "/cp/[slug]/page": "app/cp/[slug]/page.js"
+  "/upload/page": "app/upload/page.js"
 }

@@ -34,6 +34,19 @@ export default function HomeClient({ data, coverArtworkId }: Props) {
     }
   }, [coverArtworkId])
 
+  // 从URL参数读取筛选状态
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const workParam = params.get('work')
+    const cpParam = params.get('cp')
+    if (workParam) {
+      setSelectedWork(decodeURIComponent(workParam))
+    }
+    if (cpParam) {
+      setSelectedCP(decodeURIComponent(cpParam))
+    }
+  }, [])
+
   useEffect(() => {
     const ids = [...data.artworks]
       .sort((a, b) => a.order - b.order)

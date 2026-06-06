@@ -234,7 +234,7 @@ export default function StatsPage() {
       <h1 className={styles.title}>统计数据</h1>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>贡献日历</h2>
+        <h2 className={styles.sectionTitle}>日历</h2>
         <div className={styles.calendarYearPicker}>
           {years.map(year => (
             <button
