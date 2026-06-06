@@ -77,11 +77,12 @@
 
 .monthTopContainer {
   display: grid;
-  grid-auto-flow: column;
-  gap: 3px;
+  grid-template-columns: repeat(53, 17px);
+  gap: 0;
   overflow: visible;
   position: relative;
   height: 14px;
+  width: 898px;
 }
 
 .monthTopLabel {
@@ -94,13 +95,14 @@
 
 .graphContainer {
   display: flex;
+  overflow-x: auto;
 }
 
 .weeksContainer {
   display: flex;
   gap: 3px;
   flex-shrink: 0;
-  overflow: visible;
+  width: 898px; /* 53 weeks * 14px + 52 gaps * 3px */
 }
 
 .weekColumn {
