@@ -9,6 +9,7 @@ interface FormData {
   works: string
   cps: string
   tags: string
+  date: string
 }
 
 interface HistoryData {
@@ -30,15 +31,16 @@ export default function UploadPage() {
     works: '',
     cps: '',
     tags: '',
+    date: new Date().toISOString().split('T')[0],
   })
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [history, setHistory] = useState<HistoryData>({ works: [], cps: [], tags: [] })
   const [showSuggestions, setShowSuggestions] = useState<string | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; percent: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  // 加载历史记录
   useEffect(() => {
     const saved = localStorage.getItem('uploadHistory')
     if (saved) {
@@ -46,7 +48,6 @@ export default function UploadPage() {
     }
   }, [])
 
-  // 保存历史记录
   const saveHistory = (newHistory: HistoryData) => {
     setHistory(newHistory)
     localStorage.setItem('uploadHistory', JSON.stringify(newHistory))
@@ -105,11 +106,14 @@ export default function UploadPage() {
 
     setUploading(true)
     setMessage(null)
+    setUploadProgress({ current: 0, total: files.length, percent: 0 })
 
-    try {
-      let successCount = 0
+    let successCount = 0
+    let errorMessages: string[] = []
 
-      for (const item of files) {
+    for (let i = 0; i < files.length; i++) {
+      const item = files[i]
+      try {
         const formData = new FormData()
         formData.append('file', item.file)
         formData.append('data', JSON.stringify({
@@ -117,22 +121,41 @@ export default function UploadPage() {
           works: form.works.split(',').map(s => s.trim()).filter(Boolean),
           cps: form.cps.split(',').map(s => s.trim()).filter(Boolean),
           tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-          type: item.file.type.startsWith('video') ? 'video' : 'image'
+          type: item.file.type.startsWith('video') ? 'video' : 'image',
+          date: form.date
         }))
 
-        const res = await fetch('/api/upload', { method: 'POST', body: formData })
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        })
+
+        const data = await res.json()
+
         if (res.ok) {
           successCount++
+        } else {
+          errorMessages.push(data.error || `图片 ${item.title} 上传失败`)
         }
+      } catch (err) {
+        errorMessages.push(`图片 ${item.title} 请求失败`)
       }
 
-      if (successCount === files.length) {
-        setMessage({ type: 'success', text: `成功上传 ${successCount} 张图片！` })
-      } else {
-        setMessage({ type: 'error', text: `部分上传成功（${successCount}/${files.length}）` })
-      }
+      setUploadProgress({ current: i + 1, total: files.length, percent: Math.round(((i + 1) / files.length) * 100) })
+    }
 
-      // 保存到历史记录
+    setUploadProgress(null)
+
+    if (successCount === files.length) {
+      setMessage({ type: 'success', text: `成功上传 ${successCount} 张图片！` })
+    } else if (successCount > 0) {
+      setMessage({ type: 'error', text: `部分成功（${successCount}/${files.length}）: ${errorMessages.join(', ')}` })
+    } else {
+      setMessage({ type: 'error', text: `失败: ${errorMessages.join(', ')}` })
+    }
+
+    if (successCount > 0) {
       const newHistory = { ...history }
       form.works.split(',').map(s => s.trim()).filter(Boolean).forEach(w => {
         if (!newHistory.works.includes(w)) newHistory.works.unshift(w)
@@ -150,11 +173,9 @@ export default function UploadPage() {
       saveHistory(newHistory)
 
       setTimeout(() => router.push('/'), 1500)
-    } catch {
-      setMessage({ type: 'error', text: '上传失败，请重试' })
-    } finally {
-      setUploading(false)
     }
+
+    setUploading(false)
   }
 
   const handleInputFocus = (field: 'works' | 'cps' | 'tags') => {
@@ -275,56 +296,86 @@ export default function UploadPage() {
             />
           </div>
 
+          <div className={styles.field}>
+            <label>创作日期</label>
+            <input
+              type="date"
+              value={form.date}
+              onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+              className={styles.dateInput}
+            />
+          </div>
+
           <div className={styles.fieldWithSuggest}>
             <label>作品名</label>
-            <input
-              type="text"
-              value={form.works}
-              onChange={e => setForm(f => ({ ...f, works: e.target.value }))}
-              onFocus={() => handleInputFocus('works')}
-              onBlur={handleInputBlur}
-              placeholder="如：进巨、咒术（多个用逗号分隔）"
-              className={styles.input}
-            />
-            {showSuggestions === 'works' && (
-              <SuggestionList items={history.works} field="works" onSelect={v => insertSuggestion('works', v)} />
-            )}
+            <div className={styles.inputWrapper}>
+              <input
+                type="text"
+                value={form.works}
+                onChange={e => setForm(f => ({ ...f, works: e.target.value }))}
+                onFocus={() => handleInputFocus('works')}
+                onBlur={handleInputBlur}
+                placeholder="如：进巨、咒术（多个用逗号分隔）"
+                className={styles.input}
+              />
+              {showSuggestions === 'works' && (
+                <SuggestionList items={history.works} field="works" onSelect={v => insertSuggestion('works', v)} />
+              )}
+            </div>
           </div>
 
           <div className={styles.fieldWithSuggest}>
             <label>CP</label>
-            <input
-              type="text"
-              value={form.cps}
-              onChange={e => setForm(f => ({ ...f, cps: e.target.value }))}
-              onFocus={() => handleInputFocus('cps')}
-              onBlur={handleInputBlur}
-              placeholder="如：Erikusa、五夏（多个用逗号分隔）"
-              className={styles.input}
-            />
-            {showSuggestions === 'cps' && (
-              <SuggestionList items={history.cps} field="cps" onSelect={v => insertSuggestion('cps', v)} />
-            )}
+            <div className={styles.inputWrapper}>
+              <input
+                type="text"
+                value={form.cps}
+                onChange={e => setForm(f => ({ ...f, cps: e.target.value }))}
+                onFocus={() => handleInputFocus('cps')}
+                onBlur={handleInputBlur}
+                placeholder="如：Erikusa、五夏（多个用逗号分隔）"
+                className={styles.input}
+              />
+              {showSuggestions === 'cps' && (
+                <SuggestionList items={history.cps} field="cps" onSelect={v => insertSuggestion('cps', v)} />
+              )}
+            </div>
           </div>
 
           <div className={styles.fieldWithSuggest}>
             <label>标签</label>
-            <input
-              type="text"
-              value={form.tags}
-              onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-              onFocus={() => handleInputFocus('tags')}
-              onBlur={handleInputBlur}
-              placeholder="自由添加标签（多个用逗号分隔）"
-              className={styles.input}
-            />
-            {showSuggestions === 'tags' && (
-              <SuggestionList items={history.tags} field="tags" onSelect={v => insertSuggestion('tags', v)} />
-            )}
+            <div className={styles.inputWrapper}>
+              <input
+                type="text"
+                value={form.tags}
+                onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                onFocus={() => handleInputFocus('tags')}
+                onBlur={handleInputBlur}
+                placeholder="自由添加标签（多个用逗号分隔）"
+                className={styles.input}
+              />
+              {showSuggestions === 'tags' && (
+                <SuggestionList items={history.tags} field="tags" onSelect={v => insertSuggestion('tags', v)} />
+              )}
+            </div>
           </div>
 
           {message && (
             <p className={`${styles.message} ${styles[message.type]}`}>{message.text}</p>
+          )}
+
+          {uploadProgress && (
+            <div className={styles.progressContainer}>
+              <div className={styles.progressText}>
+                上传中 {uploadProgress.current}/{uploadProgress.total} ({uploadProgress.percent}%)
+              </div>
+              <div className={styles.progressBar}>
+                <div
+                  className={styles.progressFill}
+                  style={{ width: `${uploadProgress.percent}%` }}
+                />
+              </div>
+            </div>
           )}
 
           <button type="submit" className={styles.btn} disabled={uploading}>

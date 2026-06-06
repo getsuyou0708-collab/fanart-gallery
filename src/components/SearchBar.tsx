@@ -27,6 +27,11 @@ export default function SearchBar({ onSearch, placeholder = '搜索作品、CP �
         onChange={e => setValue(e.target.value)}
         placeholder={placeholder}
         className={styles.input}
+        autoComplete="new-search"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck="false"
+        name={"search-" + Math.random().toString(36).slice(2)}
       />
       {value && (
         <button className={styles.clear} onClick={() => setValue('')}>✕</button>

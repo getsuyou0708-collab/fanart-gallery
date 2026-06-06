@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unlink } from 'fs/promises'
-import path from 'path'
+import { supabase } from '@/lib/supabase'
 
 export async function DELETE(req: NextRequest) {
   const authCookie = req.cookies.get('auth')
@@ -16,36 +15,32 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    // 从 artworks.json 读取数据
-    const { readFile, writeFile } = await import('fs/promises')
-    const dataPath = path.join(process.cwd(), 'public', 'data', 'artworks.json')
-    const data = await readFile(dataPath, 'utf-8')
-    const artworks = JSON.parse(data)
+    // 从 Supabase 删除
+    const { error } = await supabase
+      .from('artworks')
+      .delete()
+      .eq('id', id)
 
-    const artwork = artworks.find((a: any) => a.id === id)
-    if (!artwork) {
-      return NextResponse.json({ error: '作品不存在' }, { status: 404 })
+    if (error) {
+      console.error('[Delete] Supabase delete error:', error)
+      return NextResponse.json({ error: '删除失败: ' + error.message }, { status: 500 })
     }
 
-    // 删除文件
-    try {
-      const filePath = path.join(
-        process.cwd(),
-        'public',
-        'assets',
-        artwork.type === 'video' ? 'videos' : 'images',
-        artwork.filename
-      )
-      await unlink(filePath)
-    } catch {}
-
-    // 从列表中移除
-    const newArtworks = artworks.filter((a: any) => a.id !== id)
-    await writeFile(dataPath, JSON.stringify(newArtworks, null, 2))
+    // 刷新 CDN 缓存（通过 Vercel API）
+    const secret = process.env.REVALIDATION_SECRET
+    if (secret) {
+      try {
+        await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/&secret=${secret}`)
+        await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/manage&secret=${secret}`)
+      } catch (e) {
+        console.log('[Delete] Revalidation error:', e)
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Delete error:', error)
-    return NextResponse.json({ error: '删除失败' }, { status: 500 })
+    const message = error instanceof Error ? error.message : String(error)
+    return NextResponse.json({ error: '删除失败: ' + message }, { status: 500 })
   }
 }

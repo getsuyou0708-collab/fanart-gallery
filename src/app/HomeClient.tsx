@@ -29,10 +29,10 @@ export default function HomeClient({ data, coverArtworkId }: Props) {
   const [orderedIds, setOrderedIds] = useState<string[]>([])
 
   useEffect(() => {
-    if (coverArtworkId && !isUnlocked) {
+    if (coverArtworkId) {
       setShowCover(true)
     }
-  }, [coverArtworkId, isUnlocked])
+  }, [coverArtworkId])
 
   useEffect(() => {
     const ids = [...data.artworks]
@@ -135,10 +135,62 @@ export default function HomeClient({ data, coverArtworkId }: Props) {
               <span>全部作品</span>
               <span className={styles.count}>{data.artworks.length}</span>
             </button>
-            {workCounts.map(work => (
-              <button
+            {workCounts.map((work, index) => (
+              <div
                 key={work.slug}
-                className={`${styles.workItem} ${selectedWork === work.name ? styles.active : ''}`}
+                className={`${styles.workItem} ${selectedWork === work.name ? styles.active : ''} ${isUnlocked ? styles.draggable : ''}`}
+                draggable={isUnlocked}
+                onDragStart={(e) => {
+                  if (!isUnlocked) return
+                  e.dataTransfer.setData('text/plain', work.name)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragOver={(e) => {
+                  if (!isUnlocked) return
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                }}
+                               onDrop={(e) => {
+                  if (!isUnlocked) return
+                  e.preventDefault()
+                  const draggedWork = e.dataTransfer.getData('text/plain')
+                  if (draggedWork === work.name) return
+
+                  // 重新排序 works数组
+                  const currentWorks = [...workCounts]
+                  const draggedIndex = currentWorks.findIndex(w => w.name === draggedWork)
+                  const dropIndex = currentWorks.findIndex(w => w.name === work.name)
+
+                  if (draggedIndex !== -1 && dropIndex !== -1) {
+                    const [removed] = currentWorks.splice(draggedIndex, 1)
+                    currentWorks.splice(dropIndex, 0, removed)
+
+                    // 为每个作品分配 order 值（同一作品的所有作品连续排序）
+                    let orderCounter = 1
+                    const workOrderMap = new Map<string, number>()
+                    currentWorks.forEach((w, idx) => {
+                      workOrderMap.set(w.name, idx + 1)
+                    })
+
+                    // 按作品顺序重排所有作品
+                    const reorderedArtworks = [...data.artworks].sort((a, b) => {
+                      // 先按作品顺序
+                      const aWorkOrder = workOrderMap.get(a.works[0]) || 999
+                      const bWorkOrder = workOrderMap.get(b.works[0]) || 999
+                      if (aWorkOrder !== bWorkOrder) return aWorkOrder - bWorkOrder
+                      // 同一作品内按原 order 排序
+                      return a.order - b.order
+                    })
+
+                    // 分配新的连续 order
+                    const finalArtworks = reorderedArtworks.map((a, idx) => ({
+                      ...a,
+                      order: idx + 1
+                    }))
+
+                    handleReorder(finalArtworks)
+                  }
+                }}
                 onClick={() => {
                   setSelectedWork(work.name)
                   setSelectedCP(null)
@@ -146,7 +198,7 @@ export default function HomeClient({ data, coverArtworkId }: Props) {
               >
                 <span>{work.name}</span>
                 <span className={styles.count}>{work.count}</span>
-              </button>
+              </div>
             ))}
           </div>
         </div>

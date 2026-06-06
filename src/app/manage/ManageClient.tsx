@@ -71,9 +71,14 @@ export default function ManageClient({ artworks }: Props) {
 
   const handleDelete = async (id: string) => {
     if (!confirm('确定要删除吗？')) return
-    await fetch(`/api/delete?id=${id}`, { method: 'DELETE' })
-    setItems(prev => prev.filter(i => i.id !== id))
-    setSelectedIds(prev => prev.filter(i => i !== id))
+    const res = await fetch(`/api/delete?id=${id}`, { method: 'DELETE', credentials: 'include' })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) {
+      setItems(prev => prev.filter(i => i.id !== id))
+      setSelectedIds(prev => prev.filter(i => i !== id))
+    } else {
+      alert('删除失败: ' + (data.error || res.statusText))
+    }
   }
 
   const handleBatchDelete = async () => {
@@ -81,7 +86,7 @@ export default function ManageClient({ artworks }: Props) {
     if (!confirm(`确定要删除选中的 ${selectedIds.length} 个作品吗？`)) return
 
     for (const id of selectedIds) {
-      await fetch(`/api/delete?id=${id}`, { method: 'DELETE' })
+      await fetch(`/api/delete?id=${id}`, { method: 'DELETE', credentials: 'include' })
     }
     setItems(prev => prev.filter(i => !selectedIds.includes(i.id)))
     setSelectedIds([])

@@ -66,6 +66,12 @@ export default function Navigation() {
                 >
                   ♡ 管理
                 </Link>
+                <Link
+                  href="/stats"
+                  className={`${styles.link} ${pathname === '/stats' ? styles.active : ''}`}
+                >
+                  ☰统计
+                </Link>
               </>
             )}
           </div>

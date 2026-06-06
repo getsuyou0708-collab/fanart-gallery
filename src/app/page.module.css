@@ -67,6 +67,19 @@
   opacity: 0.9;
 }
 
+.workItem.draggable {
+  cursor: grab;
+}
+
+.workItem.draggable:active {
+  cursor: grabbing;
+}
+
+.workItem.dragging {
+  opacity: 0.5;
+  background: var(--accent);
+}
+
 .main {
   flex: 1;
   min-width: 0;

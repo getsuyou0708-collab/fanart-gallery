@@ -1,27 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OSS from 'ali-oss'
 import { Artwork } from '@/lib/types'
+import { supabase } from '@/lib/supabase'
 
-// 阿里云 OSS 配置
-const client = new OSS({
-  region: 'oss-cn-shanghai',
-  accessKeyId: process.env.ALI_ACCESS_KEY_ID,
-  accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET,
-  bucket: 'xiaoxiao0708'
-})
+let client: OSS | null = null
 
-function toSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '-').replace(/[×x]/g, '-')
+function getOSSClient() {
+  if (!client) {
+    client = new OSS({
+      region: 'oss-cn-shanghai',
+      accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
+      accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
+      bucket: 'xiaoxiao0708'
+    } as any)
+  }
+  return client
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    // 验证认证
-    const authCookie = req.cookies.get('auth')
-    if (authCookie?.value !== 'authenticated') {
-      return NextResponse.json({ error: '未授权' }, { status: 401 })
-    }
+  console.log('[Upload] Starting upload...')
 
+  const authCookie = req.cookies.get('auth')
+  if (authCookie?.value !== 'authenticated') {
+    console.log('[Upload] Auth failed')
+    return NextResponse.json({ error: '未授权' }, { status: 401 })
+  }
+
+  try {
     const formData = await req.formData()
     const file = formData.get('file') as File
     const dataStr = formData.get('data') as string
@@ -35,44 +40,56 @@ export async function POST(req: NextRequest) {
     const id = `art_${Date.now()}`
     const filename = `${id}.${ext}`
 
-    // 上传到阿里云 OSS
     const buffer = Buffer.from(await file.arrayBuffer())
-    const result = await client.put(`fanart-gallery/${filename}`, buffer)
+    const ossClient = getOSSClient()
 
-    // 更新 artworks.json
-    const dataPath = '/Users/yueyaowan/Library/Application Support/CherryStudio/Data/Agents/t-default/fanart-gallery/public/data/artworks.json'
-    let artworks: Artwork[] = []
+    await ossClient.put(`fanart-gallery/${filename}`, buffer)
 
-    try {
-      const { readFile } = await import('fs/promises')
-      const existing = await readFile(dataPath, 'utf-8')
-      artworks = JSON.parse(existing)
-    } catch {}
+    // 获取当前最大的 order
+    const { data: existing } = await supabase
+      .from('artworks')
+      .select('order')
+      .order('order', { ascending: false })
+      .limit(1)
+
+    const maxOrder = existing && existing.length > 0 ? existing[0].order : 0
 
     const newArtwork: Artwork = {
       id,
       title: metadata.title,
-      filename: result.name,  // 存储 OSS 上的路径名，如 "fanart-gallery/art_xxx.jpg"
+      filename: `fanart-gallery/${filename}`,
       type: metadata.type,
       works: metadata.works,
       cps: metadata.cps,
       tags: metadata.tags,
-      order: artworks.length + 1,
-      createdAt: new Date().toISOString()
+      order: maxOrder + 1,
+      createdAt: metadata.date ? new Date(metadata.date).toISOString() : new Date().toISOString()
     }
 
-    artworks.push(newArtwork)
+    // 插入到 Supabase
+    const { error } = await supabase
+      .from('artworks')
+      .insert([newArtwork])
 
-    await writeFile(dataPath, JSON.stringify(artworks, null, 2))
+    if (error) {
+      console.error('[Upload] Supabase insert error:', error)
+      return NextResponse.json({ error: '保存失败: ' + error.message }, { status: 500 })
+    }
+
+    // 刷新 CDN 缓存（通过 Vercel API）
+    const secret = process.env.REVALIDATION_SECRET
+    if (secret) {
+      try {
+        await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/&secret=${secret}`)
+        await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/manage&secret=${secret}`)
+      } catch (e) {
+        console.log('[Upload] Revalidation error:', e)
+      }
+    }
 
     return NextResponse.json({ success: true, artwork: newArtwork })
   } catch (error) {
-    console.error('Upload error:', error)
-    return NextResponse.json({ error: '上传失败' }, { status: 500 })
+    console.error('[Upload] Error:', error)
+    return NextResponse.json({ error: '上传失败: ' + String(error) }, { status: 500 })
   }
-}
-
-async function writeFile(path: string, content: string) {
-  const { writeFile } = await import('fs/promises')
-  return writeFile(path, content)
 }

@@ -1,34 +1,35 @@
 import { GalleryData, Artwork, Work, CP } from './types'
-import fs from 'fs'
-import path from 'path'
+import { supabase } from './supabase'
 
-const DATA_PATH = path.join(process.cwd(), 'public', 'data', 'artworks.json')
-const SETTINGS_PATH = path.join(process.cwd(), 'public', 'data', 'settings.json')
+const OSS_BASE = 'https://xiaoxiao0708.oss-cn-shanghai.aliyuncs.com'
 
-// 获取所有数据
+// 获取所有数据 - 从 Supabase 读取
 export async function getGalleryData(): Promise<GalleryData> {
-  console.log('[DEBUG] getGalleryData called, CWD:', process.cwd())
-  console.log('[DEBUG] DATA_PATH:', DATA_PATH)
-  console.log('[DEBUG] File exists:', fs.existsSync(DATA_PATH))
+  console.log('[DEBUG] getGalleryData called - reading from Supabase')
   try {
-    const fileContent = fs.readFileSync(DATA_PATH, 'utf-8')
-    console.log('[DEBUG] File read success, length:', fileContent.length)
-    const raw = JSON.parse(fileContent)
-    // 支持两种格式：{ artworks: [...] } 或直接是 [...]
-    const artworks: Artwork[] = Array.isArray(raw) ? raw : (raw.artworks || [])
-    console.log('[DEBUG] Parsed, artworks:', artworks.length)
+    const { data: artworks, error } = await supabase
+      .from('artworks')
+      .select('*')
+      .order('order', { ascending: true })
 
-  // 从 artworks 中动态生成 works 和 cps 列表
+    if (error) {
+      console.log('[DEBUG] Supabase error:', error)
+      return { artworks: [], works: [], cps: [] }
+    }
+
+    console.log('[DEBUG] Fetched from Supabase, artworks:', artworks?.length || 0)
+
+    // 从 artworks 中动态生成 works 和 cps 列表
     const worksMap = new Map<string, Work>()
     const cpsMap = new Map<string, CP>()
 
-    artworks.forEach((artwork: Artwork) => {
-      artwork.works.forEach(w => {
+    artworks?.forEach((artwork: any) => {
+      artwork.works.forEach((w: string) => {
         if (!worksMap.has(w)) {
           worksMap.set(w, { slug: toSlug(w), name: w })
         }
       })
-      artwork.cps.forEach(c => {
+      artwork.cps.forEach((c: string) => {
         if (!cpsMap.has(c)) {
           cpsMap.set(c, { slug: toSlug(c), name: c })
         }
@@ -36,7 +37,7 @@ export async function getGalleryData(): Promise<GalleryData> {
     })
 
     return {
-      artworks: artworks,
+      artworks: artworks || [],
       works: Array.from(worksMap.values()),
       cps: Array.from(cpsMap.values())
     }
@@ -52,8 +53,9 @@ export interface Settings {
 
 export async function getSettings(): Promise<Settings> {
   try {
-    const content = fs.readFileSync(SETTINGS_PATH, 'utf-8')
-    return JSON.parse(content)
+    const response = await fetch(`${OSS_BASE}/fanart-gallery/settings.json`)
+    if (!response.ok) return {}
+    return await response.json()
   } catch {
     return {}
   }
