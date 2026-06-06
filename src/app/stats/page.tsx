@@ -384,14 +384,9 @@ export default function StatsPage() {
           <div className={styles.tooltipDate}>{selectedDay.date}</div>
           <div className={styles.tooltipCount}>{selectedDay.count} 作品</div>
           {selectedDay.artworks.map(artwork => (
-            <Link
-              key={artwork.id}
-              href={`/?work=${encodeURIComponent(artwork.works[0])}`}
-              className={styles.tooltipArtwork}
-              onClick={() => setSelectedDay(null)}
-            >
+            <span key={artwork.id} className={styles.tooltipArtwork}>
               {artwork.title}
-            </Link>
+            </span>
           ))}
         </div>
       )}
