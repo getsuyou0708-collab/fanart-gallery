@@ -76,9 +76,8 @@
 }
 
 .monthTopContainer {
-  display: grid;
-  grid-template-columns: repeat(53, 17px);
-  gap: 0;
+  display: flex;
+  gap: 3px;
   overflow: visible;
   position: relative;
   height: 14px;
@@ -91,6 +90,7 @@
   text-align: left;
   flex-shrink: 0;
   white-space: nowrap;
+  width: 14px;
 }
 
 .graphContainer {

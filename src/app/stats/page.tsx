@@ -243,11 +243,14 @@ export default function StatsPage() {
           {/* 顶部月份标签 */}
           <div className={styles.monthTopLabels}>
             <div className={styles.monthTopContainer}>
-              {contributionData.monthPositions.map(({ month, weekIndex }) => (
-                <span key={month} className={styles.monthTopLabel} style={{ gridColumn: weekIndex + 1 }}>
-                  {months[month - 1]}
-                </span>
-              ))}
+              {contributionData.monthPositions.map(({ month, weekIndex }) => {
+                const left = weekIndex * 17
+                return (
+                  <span key={month} className={styles.monthTopLabel} style={{ position: 'absolute', left: `${left}px` }}>
+                    {months[month - 1]}
+                  </span>
+                )
+              })}
             </div>
           </div>
 
