@@ -41,13 +41,8 @@ export default function StatsPage() {
   }, [])
 
   const years = useMemo(() => {
-    if (!data) return []
-    const yearSet = new Set<string>()
-    data.artworks.forEach(a => {
-      const year = a.createdAt.split('T')[0].split('-')[0]
-      yearSet.add(year)
-    })
-    return Array.from(yearSet).sort((a, b) => b.localeCompare(a))
+    //固定显示2023-2025 年
+    return ['2025', '2024', '2023']
   }, [data])
 
   useEffect(() => {
