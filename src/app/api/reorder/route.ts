@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 export async function POST(req: NextRequest) {
   try {
     const { artworks } = await req.json()
+    console.log('[Reorder] Received artworks:', artworks.length)
 
     // 更新 Supabase 中所有记录的 order 和其他字段
     for (let i = 0; i < artworks.length; i++) {
@@ -15,7 +16,10 @@ export async function POST(req: NextRequest) {
       if (artwork.works !== undefined) updateData.works = artwork.works
       if (artwork.cps !== undefined) updateData.cps = artwork.cps
       if (artwork.tags !== undefined) updateData.tags = artwork.tags
-      if (artwork.createdAt !== undefined) updateData.createdAt = artwork.createdAt
+      if (artwork.createdAt !== undefined) {
+        updateData.createdAt = artwork.createdAt
+        console.log('[Reorder] Updating createdAt for', artwork.id, 'to', artwork.createdAt)
+      }
 
       const { error } = await supabase
         .from('artworks')
