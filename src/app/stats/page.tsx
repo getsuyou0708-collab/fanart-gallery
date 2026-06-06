@@ -61,9 +61,9 @@ export default function StatsPage() {
     const calculateCellSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth
-        // 可用宽度 = 容器宽度 - 左侧星期标签(24px) - 右边距
-        const availableWidth = containerWidth - 24 - 20
-        //52周 + 一些余量, 计算每个单元格的宽度
+        // 可用宽度 = 容器宽度 - 右边距
+        const availableWidth = containerWidth - 20
+        // 52周 + 一些余量, 计算每个单元格的宽度
         const numWeeks = 53
         const gap = 3
         const cellSize = Math.floor((availableWidth - (gap * numWeeks)) / numWeeks)
@@ -74,7 +74,7 @@ export default function StatsPage() {
     calculateCellSize()
     window.addEventListener('resize', calculateCellSize)
     return () => window.removeEventListener('resize', calculateCellSize)
-  }, [contributionData.weeks.length])
+  }, [selectedYear])
 
   // GitHub 风格的周贡献数据
   const contributionData = useMemo((): { weeks: WeekDay[][]; maxCount: number; monthPositions: { month: number; weekIndex: number }[] } => {
@@ -245,7 +245,7 @@ export default function StatsPage() {
         </div>
 
         <div className={styles.graphWrapper} ref={containerRef}>
-                   {/* 顶部月份标签 */}
+          {/* 顶部月份标签 */}
           <div className={styles.monthTopLabels}>
             <div className={styles.monthTopContainer}>
               {months.map((month, idx) => (
@@ -321,7 +321,7 @@ export default function StatsPage() {
           />
         </div>
 
-         <div className={styles.statsTable}>
+        <div className={styles.statsTable}>
           <div className={styles.tableHeader}>
             <span className={styles.colName}>{filterType === 'work' ? '作品' : 'CP'}</span>
             <span className={`${styles.colCount} ${styles.colHeader}`}>数量</span>
@@ -348,7 +348,7 @@ export default function StatsPage() {
                   />
                 </div>
                 <span className={styles.percentText}>
-                  {totalArtworks > 0 ? Math.round((stat.count / totalArtworks) * 100 : 0}%
+                  {totalArtworks > 0 ? Math.round((stat.count / totalArtworks) * 100) : 0}%
                 </span>
               </div>
             </div>
