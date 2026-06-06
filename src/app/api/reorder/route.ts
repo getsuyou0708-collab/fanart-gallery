@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       try {
         await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/&secret=${secret}`)
         await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/manage&secret=${secret}`)
+        await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/stats&secret=${secret}`)
       } catch (e) {
         console.log('[Reorder] Revalidation error:', e)
       }
