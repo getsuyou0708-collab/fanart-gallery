@@ -132,29 +132,19 @@ export default function StatsPage() {
       weeks.push(currentWeek)
     }
 
-    // 计算月份位置 -找到每个月第一天所在的周
+    // 计算月份位置 - 在周网格中找到每个月第一天的位置
     const monthPositions: { month: number; weekIndex: number }[] = []
-    const firstDayOfWeek = startDate.getDay()
-    const padding = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
 
-    allDays.forEach((day, dayIndex) => {
-      if (day.date && day.count >= 0) {
-        const dateParts = day.date.split('-')
-        const month = parseInt(dateParts[1])
-        const dayOfMonth = parseInt(dateParts[2])
-        //减去填充天数得到正确的周索引
-        const weekIndex = Math.floor((dayIndex - padding) / 7)
-
-        // 只记录每月第一天或第一周的数据
-        if (dayOfMonth === 1 || !monthPositions.find(m => m.month === month)) {
-          const existing = monthPositions.find(m => m.month === month)
-          if (existing) {
-            existing.weekIndex = weekIndex
-          } else {
+    weeks.forEach((week, weekIndex) => {
+      week.forEach((day) => {
+        if (day.date && day.count >= 0) {
+          const month = parseInt(day.date.split('-')[1])
+          //找到该月的第一个有数据的日期
+          if (!monthPositions.find(m => m.month === month)) {
             monthPositions.push({ month, weekIndex })
           }
         }
-      }
+      })
     })
 
     const maxCount = Math.max(...allDays.map(d => d.count), 1)
