@@ -293,29 +293,17 @@ function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext }: {
   onPrev: () => void
   onNext: () => void
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  // 当 currentIndex 变化时，自动滚动到对应图片
-  useEffect(() => {
-    if (!containerRef.current) return
-    const imgs = containerRef.current.querySelectorAll('img')
-    if (imgs[currentIndex]) {
-      imgs[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [currentIndex])
+  const currentItem = items[currentIndex]
+  if (!currentItem) return null
 
   return (
     <div className={styles.lightbox} onClick={onClose}>
-      <div className={styles.groupLightboxContent} ref={containerRef} onClick={e => e.stopPropagation()}>
-        {items.map((item, idx) => (
-          <img
-            key={item.id}
-            src={getImageUrl(item.filename)}
-            alt={item.title}
-            className={styles.groupLightboxImage}
-            style={{ opacity: idx === currentIndex ? 1 : 0.3 }}
-          />
-        ))}
+      <div className={styles.groupLightboxSingle} onClick={e => e.stopPropagation()}>
+        <img
+          src={getImageUrl(currentItem.filename)}
+          alt={currentItem.title}
+          className={styles.lightboxImage}
+        />
       </div>
       <button className={styles.lightboxClose} onClick={onClose}>✕</button>
       {items.length > 1 && (
@@ -325,12 +313,12 @@ function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext }: {
           <div className={styles.lightboxCounter}>{currentIndex + 1} / {items.length}</div>
         </>
       )}
-      {items[currentIndex] && (items[currentIndex].works.length > 0 || items[currentIndex].cps.length > 0) && (
+      {(currentItem.works.length > 0 || currentItem.cps.length > 0) && (
         <div className={styles.lightboxTags} onClick={e => e.stopPropagation()}>
-          {items[currentIndex].works.map(w => (
+          {currentItem.works.map(w => (
             <span key={w} className={styles.tagWork}>{w}</span>
           ))}
-          {items[currentIndex].cps.map(c => (
+          {currentItem.cps.map(c => (
             <span key={c} className={styles.tagCp}>{c}</span>
           ))}
         </div>
