@@ -90,6 +90,16 @@ export default function ManageClient({ artworks }: Props) {
     }
     setItems(prev => prev.filter(i => !selectedIds.includes(i.id)))
     setSelectedIds([])
+
+    // 刷新所有相关页面缓存
+    const secret = process.env.REVALIDATION_SECRET
+    if (secret) {
+      try {
+        await fetch(`https://fanart-gallery.vercel.app/api/revalidate?path=/&secret=${secret}`)
+      } catch (e) {
+        console.log('Revalidation error:', e)
+      }
+    }
   }
 
   const startEdit = (item: Artwork) => {
