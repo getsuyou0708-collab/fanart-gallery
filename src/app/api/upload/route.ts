@@ -11,7 +11,8 @@ function getOSSClient() {
       region: 'oss-cn-shanghai',
       accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
       accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
-      bucket: 'xiaoxiao0708'
+      bucket: 'xiaoxiao0708',
+      timeout: 120000 // 2分钟超时
     } as any)
   }
   return client
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '缺少文件或数据' }, { status: 400 })
     }
 
-    // 10MB limit
+    // 文件大小限制 10MB
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json({ error: '图片过大，请压缩到 10MB 以下' }, { status: 400 })
     }
@@ -43,15 +44,12 @@ export async function POST(req: NextRequest) {
     const metadata = JSON.parse(dataStr)
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
     const id = `art_${Date.now()}`
-    const filename = `fanart-gallery/${id}.${ext}`
-
-    console.log('[Upload] Uploading file:', filename, 'size:', file.size)
+    const filename = `${id}.${ext}`
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const ossClient = getOSSClient()
 
-    const result = await ossClient.put(filename, buffer)
-    console.log('[Upload] OSS result:', result)
+    await ossClient.put(`fanart-gallery/${filename}`, buffer)
 
     // 获取当前最大的 order
     const { data: existing } = await supabase
@@ -65,7 +63,7 @@ export async function POST(req: NextRequest) {
     const newArtwork: Artwork = {
       id,
       title: metadata.title,
-      filename: filename,
+      filename: `fanart-gallery/${filename}`,
       type: metadata.type,
       works: metadata.works,
       cps: metadata.cps,
@@ -74,6 +72,7 @@ export async function POST(req: NextRequest) {
       createdAt: metadata.date ? new Date(metadata.date).toISOString() : new Date().toISOString()
     }
 
+    // 插入到 Supabase
     const { error } = await supabase
       .from('artworks')
       .insert([newArtwork])
@@ -83,7 +82,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '保存失败: ' + error.message }, { status: 500 })
     }
 
-    // 刷新 CDN 缓存
+    // 刷新 CDN 缓存（通过 Vercel API）
     const secret = process.env.REVALIDATION_SECRET
     if (secret) {
       try {
@@ -99,4 +98,10 @@ export async function POST(req: NextRequest) {
     console.error('[Upload] Error:', error)
     return NextResponse.json({ error: '上传失败: ' + String(error) }, { status: 500 })
   }
+}
+
+export const config = {
+  api: {
+    bodySizeLimit: '10mb',
+  },
 }
