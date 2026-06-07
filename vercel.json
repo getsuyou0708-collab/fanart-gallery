@@ -1,4 +1,0 @@
-{
-  "buildCommand": "node scripts/update-cors.js && next build",
-  "installCommand": "npm install"
-}
