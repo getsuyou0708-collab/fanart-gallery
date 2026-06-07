@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { Artwork } from '@/lib/types'
 import MediaCard from './MediaCard'
 import { useEditor } from '@/contexts/EditorContext'
@@ -59,7 +58,6 @@ function buildGridItems(artworks: Artwork[]): GridItem[] {
 }
 
 export default function ImageGrid({ artworks, onReorder }: Props) {
-  const router = useRouter()
   const { isUnlocked } = useEditor()
   const [gridItems, setGridItems] = useState<GridItem[]>([])
   // flatItems 用于灯箱导航（所有作品扁平列表）
@@ -104,41 +102,67 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
   }, [canGroupNavigateNext])
 
   // 键盘导航
+  // ← / → 箭头：切换上一个/下一个作品
+  // ↑ / ↓ 箭头：仅在分组灯箱中切换图片
   useEffect(() => {
     const hasLightbox = lightboxArtwork !== null || groupItems.length > 0
     if (!hasLightbox) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 分组灯箱导航
-      if (groupItems.length > 0) {
-        if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && groupIndex < groupItems.length - 1) {
+      // 左/右箭头：切换作品
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        if (lightboxIndex > 0) {
+          const prevArtwork = flatItems[lightboxIndex - 1]
+          setLightboxArtwork(prevArtwork)
+          setLightboxIndex(lightboxIndex - 1)
+          // 如果是分组作品，打开分组灯箱
+          if (prevArtwork.groupId) {
+            const group = flatItems.filter(a => a.groupId === prevArtwork.groupId)
+            group.sort((a, b) => a.order - b.order)
+            setGroupItems(group)
+            setGroupIndex(0)
+          } else {
+            setGroupItems([])
+          }
+        }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        if (lightboxIndex < flatItems.length - 1) {
+          const nextArtwork = flatItems[lightboxIndex + 1]
+          setLightboxArtwork(nextArtwork)
+          setLightboxIndex(lightboxIndex + 1)
+          // 如果是分组作品，打开分组灯箱
+          if (nextArtwork.groupId) {
+            const group = flatItems.filter(a => a.groupId === nextArtwork.groupId)
+            group.sort((a, b) => a.order - b.order)
+            setGroupItems(group)
+            setGroupIndex(0)
+          } else {
+            setGroupItems([])
+          }
+        }
+      }
+      // 上/下箭头：仅在分组灯箱中切换图片
+      else if (groupItems.length > 0) {
+        if (e.key === 'ArrowUp') {
           e.preventDefault()
-          setGroupIndex(prev => prev + 1)
-        } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && groupIndex > 0) {
+          if (groupIndex > 0) setGroupIndex(prev => prev - 1)
+        } else if (e.key === 'ArrowDown') {
           e.preventDefault()
-          setGroupIndex(prev => prev - 1)
+          if (groupIndex < groupItems.length - 1) setGroupIndex(prev => prev + 1)
         } else if (e.key === 'Escape') {
           setGroupItems([])
           setGroupIndex(0)
         }
-      }
-      // 单图灯箱导航
-      else if (lightboxArtwork) {
-        if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && lightboxIndex < flatItems.length - 1) {
-          e.preventDefault()
-          setLightboxIndex(prev => prev + 1)
-        } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && lightboxIndex > 0) {
-          e.preventDefault()
-          setLightboxIndex(prev => prev - 1)
-        } else if (e.key === 'Escape') {
-          setLightboxArtwork(null)
-        }
+      } else if (e.key === 'Escape') {
+        setLightboxArtwork(null)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems.length])
+  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems])
 
   if (gridItems.length === 0) {
     return (
@@ -206,9 +230,14 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
   }
 
   const handleCardClick = (item: GridItem, idx: number) => {
-    const artwork = item.type === 'group' ? item.groupItems?.[0] : item.artwork
-    if (artwork) {
-      router.push(`/artwork/${artwork.id}`)
+    if (item.type === 'group' && item.groupItems) {
+      setGroupItems(item.groupItems)
+      setGroupIndex(0)
+    } else if (item.type === 'single' && item.artwork) {
+      const flatIdx = flatItems.findIndex(a => a.id === item.artwork!.id)
+      setLightboxArtwork(item.artwork)
+      setLightboxIndex(flatIdx >= 0 ? flatIdx : 0)
+      setLightboxTotal(flatItems.length)
     }
   }
 
