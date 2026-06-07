@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const ossClient = getOSSClient()
 
     // 生成直传签名 URL（有效期 1 小时）
-    const signUrl = ossClient.signatureUrl(objectKey, {
+    const signUrl = (ossClient as any).signatureUrl(objectKey, {
       method: 'PUT',
       'Content-Type': contentType,
       expires: 3600
