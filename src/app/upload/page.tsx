@@ -114,29 +114,64 @@ export default function UploadPage() {
     for (let i = 0; i < files.length; i++) {
       const item = files[i]
       try {
-        const formData = new FormData()
-        formData.append('file', item.file)
-        formData.append('data', JSON.stringify({
-          title: (form.title || item.title),
-          works: form.works.split(',').map(s => s.trim()).filter(Boolean),
-          cps: form.cps.split(',').map(s => s.trim()).filter(Boolean),
-          tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-          type: item.file.type.startsWith('video') ? 'video' : 'image',
-          date: form.date
-        }))
-
-        const res = await fetch('/api/upload', {
+        // 1. 获取 OSS 预签名上传 URL
+        const signRes = await fetch('/api/oss-sign', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: item.file.name,
+            contentType: item.file.type
+          }),
           credentials: 'include'
         })
 
-        const data = await res.json()
+        if (!signRes.ok) {
+          const data = await signRes.json()
+          errorMessages.push(`签名失败: ${data.error}`)
+          continue
+        }
 
-        if (res.ok) {
+        const { uploadUrl, objectKey } = await signRes.json()
+
+        // 2. 浏览器直传 PUT 到 OSS（不经过 Vercel，绕过 4.5MB 限制）
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: item.file,
+          headers: {
+            'Content-Type': item.file.type
+          }
+        })
+
+        if (!uploadRes.ok) {
+          errorMessages.push(`图片 ${item.title} 上传失败 (${uploadRes.status})`)
+          continue
+        }
+
+        // 3. 保存元数据到 Supabase
+        const id = objectKey.match(/art_([^.]+)/)?.[1] || `art_${Date.now()}`
+        const newArtwork = {
+          id,
+          title: form.title || item.title,
+          filename: objectKey,
+          type: item.file.type.startsWith('video') ? 'video' : 'image',
+          works: form.works.split(',').map(s => s.trim()).filter(Boolean),
+          cps: form.cps.split(',').map(s => s.trim()).filter(Boolean),
+          tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
+          createdAt: new Date(form.date).toISOString()
+        }
+
+        const saveRes = await fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ artworks: [newArtwork] }),
+          credentials: 'include'
+        })
+
+        if (saveRes.ok) {
           successCount++
         } else {
-          errorMessages.push(data.error || `图片 ${item.title} 上传失败`)
+          const data = await saveRes.json()
+          errorMessages.push(`保存元数据失败: ${data.error}`)
         }
       } catch (err) {
         errorMessages.push(`图片 ${item.title} 请求失败`)
