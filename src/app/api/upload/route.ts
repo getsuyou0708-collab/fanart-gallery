@@ -8,7 +8,7 @@ let client: OSS | null = null
 function getOSSClient() {
   if (!client) {
     client = new OSS({
-      region: 'oss-cn-wulanchabu',
+      endpoint: 'https://oss-cn-wulanchabu.aliyuncs.com',
       accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
       accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
       bucket: 'xiaoxiao0708'
