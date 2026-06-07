@@ -5,9 +5,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
-  api: {
-    bodySizeLimit: '10mb',
-  },
+  serverExternalPackages: ['ali-oss'],
 }
 
 module.exports = nextConfig

@@ -99,9 +99,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '上传失败: ' + String(error) }, { status: 500 })
   }
 }
-
-export const config = {
-  api: {
-    bodySizeLimit: '10mb',
-  },
-}
