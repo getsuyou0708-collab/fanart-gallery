@@ -45,6 +45,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[Cover] Error:', error)
-    return NextResponse.json({ error: '设置失败' }, { status: 500 })
+    return NextResponse.json({ error: '设置失败: ' + String(error) }, { status: 500 })
   }
 }
