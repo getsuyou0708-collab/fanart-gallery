@@ -11,7 +11,8 @@ function getOSSClient() {
       region: 'oss-cn-shanghai',
       accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
       accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
-      bucket: 'xiaoxiao0708'
+      bucket: 'xiaoxiao0708',
+      timeout: 120000 // 2分钟超时
     } as any)
   }
   return client
@@ -33,6 +34,11 @@ export async function POST(req: NextRequest) {
 
     if (!file || !dataStr) {
       return NextResponse.json({ error: '缺少文件或数据' }, { status: 400 })
+    }
+
+    // 文件大小限制 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: '图片过大，请压缩到 10MB 以下' }, { status: 400 })
     }
 
     const metadata = JSON.parse(dataStr)
