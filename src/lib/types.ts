@@ -9,6 +9,7 @@ export interface Artwork {
   tags: string[]
   order: number
   createdAt: string
+  groupId?: string     // 同批上传的图片共享同一个 groupId
 }
 
 export interface Work {

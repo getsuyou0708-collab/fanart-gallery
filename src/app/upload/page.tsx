@@ -111,6 +111,9 @@ export default function UploadPage() {
     let successCount = 0
     let errorMessages: string[] = []
 
+    // 生成同一批次的 groupId
+    const batchGroupId = `batch_${Date.now()}`
+
     for (let i = 0; i < files.length; i++) {
       const item = files[i]
       try {
@@ -159,7 +162,8 @@ export default function UploadPage() {
           works: form.works.split(',').map(s => s.trim()).filter(Boolean),
           cps: form.cps.split(',').map(s => s.trim()).filter(Boolean),
           tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-          createdAt: new Date(form.date).toISOString()
+          createdAt: new Date(form.date).toISOString(),
+          groupId: batchGroupId
         }
 
         const saveRes = await fetch('/api/save', {

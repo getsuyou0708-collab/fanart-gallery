@@ -11,36 +11,80 @@ interface Props {
   onReorder?: (artworks: Artwork[]) => void
 }
 
+// 按 groupId 分组，返回卡片列表
+function groupArtworks(artworks: Artwork[]): Artwork[] {
+  const grouped: Map<string, Artwork[]> = new Map()
+  const standalone: Artwork[] = []
+
+  artworks.forEach(a => {
+    if (a.groupId) {
+      if (!grouped.has(a.groupId)) grouped.set(a.groupId, [])
+      grouped.get(a.groupId)!.push(a)
+    } else {
+      standalone.push(a)
+    }
+  })
+
+  // 把同组的按 order 排序，只取第一个作为代表
+  const groupCards: Artwork[] = []
+  grouped.forEach(group => {
+    group.sort((a, b) => a.order - b.order)
+    const first = { ...group[0], groupSize: group.length, groupItems: group }
+    groupCards.push(first as Artwork)
+  })
+
+  // 合并：先放独立作品，再放分组（都按 order 排序）
+  const allCards = [...standalone, ...groupCards]
+  return allCards.sort((a, b) => a.order - b.order)
+}
+
 export default function ImageGrid({ artworks, onReorder }: Props) {
   const { isUnlocked } = useEditor()
-  const [items, setItems] = useState(artworks)
-  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [items, setItems] = useState<Artwork[]>([])
+  const [flatItems, setFlatItems] = useState<Artwork[]>([])
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const dragOverId = useRef<string | null>(null)
+  const [lightboxGroup, setLightboxGroup] = useState<Artwork[] | null>(null)
+  const [lightboxGroupIndex, setLightboxGroupIndex] = useState<number>(0)
+  const draggedId = useRef<string | null>(null)
 
   useEffect(() => {
-    setItems(artworks)
+    const grouped = groupArtworks(artworks)
+    setItems(grouped)
+    setFlatItems(artworks.sort((a, b) => a.order - b.order))
   }, [artworks])
 
   // 键盘导航
   useEffect(() => {
-    if (lightboxIndex === null) return
+    if (lightboxIndex === null && lightboxGroup === null) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault()
-        setLightboxIndex(prev => prev !== null ? (prev + 1) % items.length : 0)
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault()
-        setLightboxIndex(prev => prev !== null ? (prev - 1 + items.length) % items.length : items.length - 1)
-      } else if (e.key === 'Escape') {
-        setLightboxIndex(null)
+      if (lightboxGroup) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault()
+          setLightboxGroupIndex(prev => (prev + 1) % lightboxGroup.length)
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault()
+          setLightboxGroupIndex(prev => (prev - 1 + lightboxGroup.length) % lightboxGroup.length)
+        } else if (e.key === 'Escape') {
+          setLightboxGroup(null)
+          setLightboxGroupIndex(0)
+        }
+      } else if (lightboxIndex !== null) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault()
+          setLightboxIndex(prev => prev !== null ? (prev + 1) % flatItems.length : 0)
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault()
+          setLightboxIndex(prev => prev !== null ? (prev - 1 + flatItems.length) % flatItems.length : flatItems.length - 1)
+        } else if (e.key === 'Escape') {
+          setLightboxIndex(null)
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [lightboxIndex, items.length])
+  }, [lightboxIndex, lightboxGroup, lightboxGroupIndex, flatItems.length])
 
   if (items.length === 0) {
     return (
@@ -56,27 +100,26 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
       e.preventDefault()
       return
     }
-    setDraggedId(id)
+    draggedId.current = id
     e.dataTransfer.effectAllowed = 'move'
   }
 
   const handleDragOver = (e: React.DragEvent, id: string) => {
     if (!isUnlocked) return
     e.preventDefault()
-    if (draggedId === id) return
-    dragOverId.current = id
+    if (draggedId.current === id) return
   }
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault()
     if (!isUnlocked) return
-    if (!draggedId || draggedId === targetId) {
-      setDraggedId(null)
+    if (!draggedId.current || draggedId.current === targetId) {
+      draggedId.current = null
       return
     }
 
     const newItems = [...items]
-    const draggedIndex = newItems.findIndex(item => item.id === draggedId)
+    const draggedIndex = newItems.findIndex(item => item.id === draggedId.current)
     const targetIndex = newItems.findIndex(item => item.id === targetId)
 
     if (draggedIndex === -1 || targetIndex === -1) return
@@ -90,7 +133,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     }))
 
     setItems(reordered)
-    setDraggedId(null)
+    draggedId.current = null
 
     if (onReorder) {
       onReorder(reordered)
@@ -98,15 +141,25 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
   }
 
   const handleDragEnd = () => {
-    setDraggedId(null)
-    dragOverId.current = null
+    draggedId.current = null
   }
 
   const closeLightbox = useCallback(() => {
     setLightboxIndex(null)
+    setLightboxGroup(null)
+    setLightboxGroupIndex(0)
   }, [])
 
-  const currentArtwork = lightboxIndex !== null ? items[lightboxIndex] : null
+  const handleCardClick = (artwork: Artwork, index: number) => {
+    if ((artwork as any).groupSize > 1) {
+      // 点击的是分组，打开组内灯箱
+      setLightboxGroup((artwork as any).groupItems)
+      setLightboxGroupIndex(0)
+    } else {
+      // 单个作品
+      setLightboxIndex(index)
+    }
+  }
 
   return (
     <>
@@ -114,7 +167,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
         {items.map((artwork, index) => (
           <div
             key={artwork.id}
-            className={`${styles.item} ${draggedId === artwork.id ? styles.dragging : ''}`}
+            className={`${styles.item} ${draggedId.current === artwork.id ? styles.dragging : ''}`}
             style={{ animationDelay: `${index * 50}ms` }}
             draggable={isUnlocked}
             onDragStart={e => handleDragStart(e, artwork.id)}
@@ -124,29 +177,44 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
           >
             <MediaCard
               artwork={artwork}
-              onClick={() => setLightboxIndex(index)}
+              onClick={() => handleCardClick(artwork, index)}
               showDownload={isUnlocked}
             />
+            {/* 分组数量指示 */}
+            {(artwork as any).groupSize > 1 && (
+              <div className={styles.groupBadge}>{(artwork as any).groupSize}</div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* 全局灯箱 */}
-      {currentArtwork && (
+      {/* 单个作品灯箱 */}
+      {lightboxIndex !== null && !lightboxGroup && (
         <Lightbox
-          artwork={currentArtwork}
-          index={lightboxIndex!}
-          total={items.length}
+          artwork={flatItems[lightboxIndex]}
+          index={lightboxIndex}
+          total={flatItems.length}
           onClose={closeLightbox}
-          onPrev={() => setLightboxIndex(prev => prev !== null ? (prev - 1 + items.length) % items.length : 0)}
-          onNext={() => setLightboxIndex(prev => prev !== null ? (prev + 1) % items.length : 0)}
+          onPrev={() => setLightboxIndex(prev => prev !== null ? (prev - 1 + flatItems.length) % flatItems.length : 0)}
+          onNext={() => setLightboxIndex(prev => prev !== null ? (prev + 1) % flatItems.length : 0)}
+        />
+      )}
+
+      {/* 分组灯箱：竖排展示所有图片 */}
+      {lightboxGroup && (
+        <GroupLightbox
+          items={lightboxGroup}
+          currentIndex={lightboxGroupIndex}
+          onClose={closeLightbox}
+          onPrev={() => setLightboxGroupIndex(prev => (prev - 1 + lightboxGroup.length) % lightboxGroup.length)}
+          onNext={() => setLightboxGroupIndex(prev => (prev + 1) % lightboxGroup.length)}
         />
       )}
     </>
   )
 }
 
-// 灯箱组件
+// 灯箱组件（单图）
 function Lightbox({ artwork, index, total, onClose, onPrev, onNext }: {
   artwork: Artwork
   index: number
@@ -176,6 +244,49 @@ function Lightbox({ artwork, index, total, onClose, onPrev, onNext }: {
             <span key={w} className={styles.tagWork}>{w}</span>
           ))}
           {artwork.cps.map(c => (
+            <span key={c} className={styles.tagCp}>{c}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// 分组灯箱：竖排展示
+function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext }: {
+  items: Artwork[]
+  currentIndex: number
+  onClose: () => void
+  onPrev: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className={styles.lightbox} onClick={onClose}>
+      <div className={styles.groupLightboxContent} onClick={e => e.stopPropagation()}>
+        {items.map((item, idx) => (
+          <img
+            key={item.id}
+            src={getImageUrl(item.filename)}
+            alt={item.title}
+            className={styles.groupLightboxImage}
+            style={{ opacity: idx === currentIndex ? 1 : 0.3 }}
+          />
+        ))}
+      </div>
+      <button className={styles.lightboxClose} onClick={onClose}>✕</button>
+      {items.length > 1 && (
+        <>
+          <button className={styles.lightboxPrev} onClick={e => { e.stopPropagation(); onPrev() }}>❮</button>
+          <button className={styles.lightboxNext} onClick={e => { e.stopPropagation(); onNext() }}>❯</button>
+          <div className={styles.lightboxCounter}>{currentIndex + 1} / {items.length}</div>
+        </>
+      )}
+      {items[currentIndex] && (items[currentIndex].works.length > 0 || items[currentIndex].cps.length > 0) && (
+        <div className={styles.lightboxTags} onClick={e => e.stopPropagation()}>
+          {items[currentIndex].works.map(w => (
+            <span key={w} className={styles.tagWork}>{w}</span>
+          ))}
+          {items[currentIndex].cps.map(c => (
             <span key={c} className={styles.tagCp}>{c}</span>
           ))}
         </div>
