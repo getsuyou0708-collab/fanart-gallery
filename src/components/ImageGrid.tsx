@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Artwork } from '@/lib/types'
 import MediaCard from './MediaCard'
 import { useEditor } from '@/contexts/EditorContext'
@@ -58,6 +59,7 @@ function buildGridItems(artworks: Artwork[]): GridItem[] {
 }
 
 export default function ImageGrid({ artworks, onReorder }: Props) {
+  const router = useRouter()
   const { isUnlocked } = useEditor()
   const [gridItems, setGridItems] = useState<GridItem[]>([])
   // flatItems 用于灯箱导航（所有作品扁平列表）
@@ -107,24 +109,27 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     if (!hasLightbox) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 分组灯箱导航
       if (groupItems.length > 0) {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && groupIndex < groupItems.length - 1) {
           e.preventDefault()
-          if (canGroupNavigateNext) setGroupIndex(prev => prev + 1)
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          setGroupIndex(prev => prev + 1)
+        } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && groupIndex > 0) {
           e.preventDefault()
-          if (canGroupNavigatePrev) setGroupIndex(prev => prev - 1)
+          setGroupIndex(prev => prev - 1)
         } else if (e.key === 'Escape') {
           setGroupItems([])
           setGroupIndex(0)
         }
-      } else if (lightboxArtwork) {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      }
+      // 单图灯箱导航
+      else if (lightboxArtwork) {
+        if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && lightboxIndex < flatItems.length - 1) {
           e.preventDefault()
-          if (canNavigateNext) setLightboxIndex(prev => prev + 1)
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          setLightboxIndex(prev => prev + 1)
+        } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && lightboxIndex > 0) {
           e.preventDefault()
-          if (canNavigatePrev) setLightboxIndex(prev => prev - 1)
+          setLightboxIndex(prev => prev - 1)
         } else if (e.key === 'Escape') {
           setLightboxArtwork(null)
         }
@@ -133,7 +138,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems.length, canNavigatePrev, canNavigateNext, canGroupNavigatePrev, canGroupNavigateNext])
+  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems.length])
 
   if (gridItems.length === 0) {
     return (
@@ -201,14 +206,9 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
   }
 
   const handleCardClick = (item: GridItem, idx: number) => {
-    if (item.type === 'group' && item.groupItems) {
-      setGroupItems(item.groupItems)
-      setGroupIndex(0)
-    } else if (item.type === 'single' && item.artwork) {
-      const flatIdx = flatItems.findIndex(a => a.id === item.artwork!.id)
-      setLightboxArtwork(item.artwork)
-      setLightboxIndex(flatIdx >= 0 ? flatIdx : 0)
-      setLightboxTotal(flatItems.length)
+    const artwork = item.type === 'group' ? item.groupItems?.[0] : item.artwork
+    if (artwork) {
+      router.push(`/artwork/${artwork.id}`)
     }
   }
 

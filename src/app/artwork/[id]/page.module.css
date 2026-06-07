@@ -1,0 +1,242 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+  font-size: 18px;
+}
+
+/* 顶部导航 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 30px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.navBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navBtn:hover:not(.disabled) {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.navBtn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 图片网格 */
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.imageItem {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.imageItem:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.imageItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageCounter {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* 作品信息 */
+.info {
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tagWork,
+.tagCp {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.tagWork {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+}
+
+.tagCp {
+  background: rgba(245, 169, 184, 0.15);
+  color: var(--accent);
+}
+
+/* 灯箱 */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lightboxImage {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  cursor: default;
+}
+
+.lightboxClose {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  color: black;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  border: none;
+  cursor: pointer;
+}
+
+/* 切换作品的箭头 */
+.lightboxPrevArtwork,
+.lightboxNextArtwork {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: black;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lightboxPrevArtwork {
+  left: 20px;
+}
+
+.lightboxNextArtwork {
+  right: 20px;
+}
+
+.lightboxPrevArtwork:hover,
+.lightboxNextArtwork:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* 切换图片的箭头 */
+.lightboxPrevImage,
+.lightboxNextImage {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: black;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lightboxPrevImage {
+  top: 20px;
+}
+
+.lightboxNextImage {
+  bottom: 80px;
+}
+
+.lightboxPrevImage:hover,
+.lightboxNextImage:hover {
+  background: white;
+  transform: translateX(-50%) scale(1.1);
+}
+
+/* 图片计数器 */
+.lightboxCounter {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+  z-index: 100000;
+}
