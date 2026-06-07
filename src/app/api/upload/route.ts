@@ -100,8 +100,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export const config = {
-  api: {
-    bodySizeLimit: '10mb',
-  },
-}
