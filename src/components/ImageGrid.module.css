@@ -126,6 +126,25 @@
   transform: translateY(-50%) scale(1.1);
 }
 
+.lightboxPrev.disabled,
+.lightboxNext.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: translateY(-50%);
+}
+
+.lightboxPrev.disabled:hover,
+.lightboxNext.disabled:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-50%);
+}
+
+.transitioning {
+  opacity: 0.7;
+  transform: scale(0.98);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
 .lightboxCounter {
   position: fixed;
   bottom: 20px;

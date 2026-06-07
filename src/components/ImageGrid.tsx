@@ -79,6 +79,28 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     setFlatItems([...artworks].sort((a, b) => a.order - b.order))
   }, [artworks])
 
+  // 导航函数（不循环）
+  const canNavigatePrev = lightboxIndex > 0
+  const canNavigateNext = lightboxIndex < flatItems.length - 1
+  const canGroupNavigatePrev = groupIndex > 0
+  const canGroupNavigateNext = groupIndex < groupItems.length - 1
+
+  const goToPrev = useCallback(() => {
+    if (canNavigatePrev) setLightboxIndex(prev => prev - 1)
+  }, [canNavigatePrev])
+
+  const goToNext = useCallback(() => {
+    if (canNavigateNext) setLightboxIndex(prev => prev + 1)
+  }, [canNavigateNext])
+
+  const goToGroupPrev = useCallback(() => {
+    if (canGroupNavigatePrev) setGroupIndex(prev => prev - 1)
+  }, [canGroupNavigatePrev])
+
+  const goToGroupNext = useCallback(() => {
+    if (canGroupNavigateNext) setGroupIndex(prev => prev + 1)
+  }, [canGroupNavigateNext])
+
   // 键盘导航
   useEffect(() => {
     const hasLightbox = lightboxArtwork !== null || groupItems.length > 0
@@ -88,10 +110,10 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
       if (groupItems.length > 0) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault()
-          setGroupIndex(prev => (prev + 1) % groupItems.length)
+          if (canGroupNavigateNext) setGroupIndex(prev => prev + 1)
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          setGroupIndex(prev => (prev - 1 + groupItems.length) % groupItems.length)
+          if (canGroupNavigatePrev) setGroupIndex(prev => prev - 1)
         } else if (e.key === 'Escape') {
           setGroupItems([])
           setGroupIndex(0)
@@ -99,10 +121,10 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
       } else if (lightboxArtwork) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault()
-          setLightboxIndex(prev => (prev + 1) % flatItems.length)
+          if (canNavigateNext) setLightboxIndex(prev => prev + 1)
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          setLightboxIndex(prev => (prev - 1 + flatItems.length) % flatItems.length)
+          if (canNavigatePrev) setLightboxIndex(prev => prev - 1)
         } else if (e.key === 'Escape') {
           setLightboxArtwork(null)
         }
@@ -111,7 +133,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems.length])
+  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems.length, canNavigatePrev, canNavigateNext, canGroupNavigatePrev, canGroupNavigateNext])
 
   if (gridItems.length === 0) {
     return (
@@ -230,8 +252,10 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
           index={lightboxIndex}
           total={flatItems.length}
           onClose={closeLightbox}
-          onPrev={() => setLightboxIndex(prev => (prev - 1 + flatItems.length) % flatItems.length)}
-          onNext={() => setLightboxIndex(prev => (prev + 1) % flatItems.length)}
+          onPrev={goToPrev}
+          onNext={goToNext}
+          canPrev={canNavigatePrev}
+          canNext={canNavigateNext}
         />
       )}
 
@@ -241,21 +265,25 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
           items={groupItems}
           currentIndex={groupIndex}
           onClose={closeLightbox}
-          onPrev={() => setGroupIndex(prev => (prev - 1 + groupItems.length) % groupItems.length)}
-          onNext={() => setGroupIndex(prev => (prev + 1) % groupItems.length)}
+          onPrev={goToGroupPrev}
+          onNext={goToGroupNext}
+          canPrev={canGroupNavigatePrev}
+          canNext={canGroupNavigateNext}
         />
       )}
     </>
   )
 }
 
-function Lightbox({ artwork, index, total, onClose, onPrev, onNext }: {
+function Lightbox({ artwork, index, total, onClose, onPrev, onNext, canPrev, canNext }: {
   artwork: Artwork
   index: number
   total: number
   onClose: () => void
   onPrev: () => void
   onNext: () => void
+  canPrev: boolean
+  canNext: boolean
 }) {
   return (
     <div className={styles.lightbox} onClick={onClose}>
@@ -267,8 +295,16 @@ function Lightbox({ artwork, index, total, onClose, onPrev, onNext }: {
       <button className={styles.lightboxClose} onClick={onClose}>✕</button>
       {total > 1 && (
         <>
-          <button className={styles.lightboxPrev} onClick={e => { e.stopPropagation(); onPrev() }}>❮</button>
-          <button className={styles.lightboxNext} onClick={e => { e.stopPropagation(); onNext() }}>❯</button>
+          <button
+            className={`${styles.lightboxPrev} ${!canPrev ? styles.disabled : ''}`}
+            onClick={e => { e.stopPropagation(); onPrev() }}
+            disabled={!canPrev}
+          >❮</button>
+          <button
+            className={`${styles.lightboxNext} ${!canNext ? styles.disabled : ''}`}
+            onClick={e => { e.stopPropagation(); onNext() }}
+            disabled={!canNext}
+          >❯</button>
           <div className={styles.lightboxCounter}>{index + 1} / {total}</div>
         </>
       )}
@@ -286,30 +322,89 @@ function Lightbox({ artwork, index, total, onClose, onPrev, onNext }: {
   )
 }
 
-function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext }: {
+function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext, canPrev, canNext }: {
   items: Artwork[]
   currentIndex: number
   onClose: () => void
   onPrev: () => void
   onNext: () => void
+  canPrev: boolean
+  canNext: boolean
 }) {
   const currentItem = items[currentIndex]
+  const touchStartY = useRef<number | null>(null)
+  const touchStartX = useRef<number | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
   if (!currentItem) return null
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartY.current === null || touchStartX.current === null) return
+
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current
+
+    // 判断是垂直滑动还是水平滑动
+    const absDeltaY = Math.abs(deltaY)
+    const absDeltaX = Math.abs(deltaX)
+
+    // 垂直滑动距离超过水平滑动，且距离超过50px
+    if (absDeltaY > absDeltaX && absDeltaY > 50) {
+      if (deltaY < 0 && canNext) {
+        // 向上滑 -> 下一张
+        e.stopPropagation()
+        setIsTransitioning(true)
+        setTimeout(() => {
+          onNext()
+          setIsTransitioning(false)
+        }, 150)
+      } else if (deltaY > 0 && canPrev) {
+        // 向下滑 -> 上一张
+        e.stopPropagation()
+        setIsTransitioning(true)
+        setTimeout(() => {
+          onPrev()
+          setIsTransitioning(false)
+        }, 150)
+      }
+    }
+
+    touchStartY.current = null
+    touchStartX.current = null
+  }
+
   return (
-    <div className={styles.lightbox} onClick={onClose}>
+    <div
+      className={styles.lightbox}
+      onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className={styles.groupLightboxSingle} onClick={e => e.stopPropagation()}>
         <img
           src={getImageUrl(currentItem.filename)}
           alt={currentItem.title}
-          className={styles.lightboxImage}
+          className={`${styles.lightboxImage} ${isTransitioning ? styles.transitioning : ''}`}
         />
       </div>
       <button className={styles.lightboxClose} onClick={onClose}>✕</button>
       {items.length > 1 && (
         <>
-          <button className={styles.lightboxPrev} onClick={e => { e.stopPropagation(); onPrev() }}>❮</button>
-          <button className={styles.lightboxNext} onClick={e => { e.stopPropagation(); onNext() }}>❯</button>
+          <button
+            className={`${styles.lightboxPrev} ${!canPrev ? styles.disabled : ''}`}
+            onClick={e => { e.stopPropagation(); onPrev() }}
+            disabled={!canPrev}
+          >❮</button>
+          <button
+            className={`${styles.lightboxNext} ${!canNext ? styles.disabled : ''}`}
+            onClick={e => { e.stopPropagation(); onNext() }}
+            disabled={!canNext}
+          >❯</button>
           <div className={styles.lightboxCounter}>{currentIndex + 1} / {items.length}</div>
         </>
       )}
