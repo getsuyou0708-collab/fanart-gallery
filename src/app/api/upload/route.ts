@@ -8,12 +8,12 @@ let client: OSS | null = null
 function getOSSClient() {
   if (!client) {
     client = new OSS({
-      region: 'oss-cn-shanghai',
+      region: 'oss-cn-wulanchabu',
       accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
       accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
       bucket: 'xiaoxiao0708',
-      timeout: 120000 // 2分钟超时
-    } as any)
+      timeout: 120000
+    })
   }
   return client
 }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '缺少文件或数据' }, { status: 400 })
     }
 
-    // 文件大小限制 10MB
+    // 10MB limit
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json({ error: '图片过大，请压缩到 10MB 以下' }, { status: 400 })
     }
@@ -44,12 +44,15 @@ export async function POST(req: NextRequest) {
     const metadata = JSON.parse(dataStr)
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
     const id = `art_${Date.now()}`
-    const filename = `${id}.${ext}`
+    const filename = `fanart-gallery/${id}.${ext}`
+
+    console.log('[Upload] Uploading file:', filename, 'size:', file.size)
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const ossClient = getOSSClient()
 
-    await ossClient.put(`fanart-gallery/${filename}`, buffer)
+    const result = await ossClient.put(filename, buffer)
+    console.log('[Upload] OSS result:', result)
 
     // 获取当前最大的 order
     const { data: existing } = await supabase
@@ -63,7 +66,7 @@ export async function POST(req: NextRequest) {
     const newArtwork: Artwork = {
       id,
       title: metadata.title,
-      filename: `fanart-gallery/${filename}`,
+      filename: filename,
       type: metadata.type,
       works: metadata.works,
       cps: metadata.cps,
@@ -72,7 +75,6 @@ export async function POST(req: NextRequest) {
       createdAt: metadata.date ? new Date(metadata.date).toISOString() : new Date().toISOString()
     }
 
-    // 插入到 Supabase
     const { error } = await supabase
       .from('artworks')
       .insert([newArtwork])
@@ -82,7 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '保存失败: ' + error.message }, { status: 500 })
     }
 
-    // 刷新 CDN 缓存（通过 Vercel API）
+    // 刷新 CDN 缓存
     const secret = process.env.REVALIDATION_SECRET
     if (secret) {
       try {
