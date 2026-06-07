@@ -110,39 +110,83 @@ export default function UploadPage() {
 
     let successCount = 0
     let errorMessages: string[] = []
+    const uploadedArtworks: any[] = []
 
     for (let i = 0; i < files.length; i++) {
       const item = files[i]
       try {
-        const formData = new FormData()
-        formData.append('file', item.file)
-        formData.append('data', JSON.stringify({
-          title: (form.title || item.title),
-          works: form.works.split(',').map(s => s.trim()).filter(Boolean),
-          cps: form.cps.split(',').map(s => s.trim()).filter(Boolean),
-          tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-          type: item.file.type.startsWith('video') ? 'video' : 'image',
-          date: form.date
-        }))
-
-        const res = await fetch('/api/upload', {
+        // 1. 获取预签名 URL
+        const signRes = await fetch('/api/sign', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: item.file.name,
+            contentType: item.file.type
+          }),
           credentials: 'include'
         })
 
-        const data = await res.json()
-
-        if (res.ok) {
-          successCount++
-        } else {
-          errorMessages.push(data.error || `图片 ${item.title} 上传失败`)
+        if (!signRes.ok) {
+          const data = await signRes.json()
+          errorMessages.push(`获取签名失败: ${data.error}`)
+          continue
         }
+
+        const signData = await signRes.json()
+
+        // 2. 直接上传到 OSS
+        const formData = new FormData()
+        formData.append('key', signData.objectKey)
+        formData.append('OSSAccessKeyId', signData.accessKeyId)
+        formData.append('policy', signData.policy)
+        formData.append('signature', signData.signature)
+        formData.append('success_action_status', '200')
+        formData.append('file', item.file)
+
+        const uploadRes = await fetch(signData.host, {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!uploadRes.ok && uploadRes.status !== 200 && uploadRes.status !== 204) {
+          errorMessages.push(`图片 ${item.title} 上传失败`)
+          continue
+        }
+
+        // 3. 保存元数据
+        const id = signData.objectKey.match(/art_(\d+)/)?.[1] || `art_${Date.now()}`
+        const newArtwork = {
+          id,
+          title: form.title || item.title,
+          filename: signData.objectKey,
+          type: item.file.type.startsWith('video') ? 'video' : 'image',
+          works: form.works.split(',').map(s => s.trim()).filter(Boolean),
+          cps: form.cps.split(',').map(s => s.trim()).filter(Boolean),
+          tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
+          createdAt: new Date(form.date).toISOString()
+        }
+
+        uploadedArtworks.push(newArtwork)
+        successCount++
       } catch (err) {
-        errorMessages.push(`图片 ${item.title} 请求失败`)
+        errorMessages.push(`图片 ${item.title} 请求失败: ${err}`)
       }
 
       setUploadProgress({ current: i + 1, total: files.length, percent: Math.round(((i + 1) / files.length) * 100) })
+    }
+
+    // 4. 批量保存元数据到 Supabase
+    if (uploadedArtworks.length > 0) {
+      try {
+        await fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ artworks: uploadedArtworks }),
+          credentials: 'include'
+        })
+      } catch (err) {
+        console.error('Save error:', err)
+      }
     }
 
     setUploadProgress(null)
