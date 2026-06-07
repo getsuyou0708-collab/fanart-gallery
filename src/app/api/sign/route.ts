@@ -7,11 +7,11 @@ let client: OSS | null = null
 function getClient() {
   if (!client) {
     client = new OSS({
-      region: 'oss-cn-wulanchabu',
+      region: 'oss-cn-shanghai',
       accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
       accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
       bucket: 'xiaoxiao0708',
-      endpoint: 'oss-cn-wulanchabu.aliyuncs.com'
+      endpoint: 'oss-cn-shanghai.aliyuncs.com'
     } as any)
   }
   return client
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       accessKeyId,
       policy,
       signature,
-      host: 'https://xiaoxiao0708.oss-cn-wulanchabu.aliyuncs.com'
+      host: 'https://xiaoxiao0708.oss-cn-shanghai.aliyuncs.com'
     })
   } catch (error) {
     console.error('[Sign] Error:', error)
