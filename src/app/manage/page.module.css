@@ -188,6 +188,7 @@
   gap: 8px;
 }
 
+.coverBtn,
 .editBtn,
 .deleteBtn {
   padding: 8px 12px;
@@ -196,6 +197,7 @@
   transition: opacity 0.2s ease;
 }
 
+.coverBtn:hover,
 .editBtn:hover,
 .deleteBtn:hover {
   opacity: 1;

@@ -102,6 +102,26 @@ export default function ManageClient({ artworks }: Props) {
     }
   }
 
+  const handleSetCover = async (artworkId: string) => {
+    if (!confirm('确定要设为封面吗？')) return
+    try {
+      const res = await fetch('/api/cover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artworkId }),
+        credentials: 'include'
+      })
+      if (res.ok) {
+        alert('封面设置成功！')
+      } else {
+        const data = await res.json()
+        alert('设置失败: ' + (data.error || res.statusText))
+      }
+    } catch (err) {
+      alert('设置失败')
+    }
+  }
+
   const startEdit = (item: Artwork) => {
     setEditingId(item.id)
     setEditForm({
@@ -261,7 +281,10 @@ export default function ManageClient({ artworks }: Props) {
 
             <div className={styles.actions}>
               {editingId !== item.id && (
-                <button className={styles.editBtn} onClick={() => startEdit(item)}>✎</button>
+                <>
+                  <button className={styles.coverBtn} onClick={() => handleSetCover(item.id)}>⭐</button>
+                  <button className={styles.editBtn} onClick={() => startEdit(item)}>✎</button>
+                </>
               )}
               <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}>🗑</button>
             </div>
