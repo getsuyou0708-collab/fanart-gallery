@@ -293,9 +293,20 @@ function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext }: {
   onPrev: () => void
   onNext: () => void
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // 当 currentIndex 变化时，自动滚动到对应图片
+  useEffect(() => {
+    if (!containerRef.current) return
+    const imgs = containerRef.current.querySelectorAll('img')
+    if (imgs[currentIndex]) {
+      imgs[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [currentIndex])
+
   return (
     <div className={styles.lightbox} onClick={onClose}>
-      <div className={styles.groupLightboxContent} onClick={e => e.stopPropagation()}>
+      <div className={styles.groupLightboxContent} ref={containerRef} onClick={e => e.stopPropagation()}>
         {items.map((item, idx) => (
           <img
             key={item.id}
