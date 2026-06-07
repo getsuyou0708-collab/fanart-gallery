@@ -6,7 +6,7 @@ let client: OSS | null = null
 function getOSSClient() {
   if (!client) {
     client = new OSS({
-      region: 'oss-cn-wulanchabu',
+      region: 'oss-cn-shanghai',
       accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
       accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
       bucket: 'xiaoxiao0708'
