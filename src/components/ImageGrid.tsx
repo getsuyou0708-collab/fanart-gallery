@@ -11,82 +11,109 @@ interface Props {
   onReorder?: (artworks: Artwork[]) => void
 }
 
-// 按 groupId 分组，返回卡片列表
-function groupArtworks(artworks: Artwork[]): Artwork[] {
-  const grouped: Map<string, Artwork[]> = new Map()
-  const standalone: Artwork[] = []
+// 卡片类型：要么是单个作品，要么是一个组
+interface GridItem {
+  type: 'single' | 'group'
+  // single
+  artwork?: Artwork
+  // group
+  groupId?: string
+  groupSize?: number
+  groupItems?: Artwork[]
+  // 共用
+  order: number
+}
 
-  artworks.forEach(a => {
+// 把 artworks 按 groupId 分组，返回网格项（按 order 排序）
+function buildGridItems(artworks: Artwork[]): GridItem[] {
+  const sorted = [...artworks].sort((a, b) => a.order - b.order)
+
+  // 收集所有 groupId 的组
+  const groups: Map<string, Artwork[]> = new Map()
+  const singles: Artwork[] = []
+
+  sorted.forEach(a => {
     if (a.groupId) {
-      if (!grouped.has(a.groupId)) grouped.set(a.groupId, [])
-      grouped.get(a.groupId)!.push(a)
+      if (!groups.has(a.groupId)) groups.set(a.groupId, [])
+      groups.get(a.groupId)!.push(a)
     } else {
-      standalone.push(a)
+      singles.push(a)
     }
   })
 
-  // 把同组的按 order 排序，只取第一个作为代表
-  const groupCards: Artwork[] = []
-  grouped.forEach(group => {
+  const items: GridItem[] = singles.map(a => ({ type: 'single', artwork: a, order: a.order }))
+
+  groups.forEach(group => {
     group.sort((a, b) => a.order - b.order)
-    const first = { ...group[0], groupSize: group.length, groupItems: group }
-    groupCards.push(first as Artwork)
+    items.push({
+      type: 'group',
+      groupId: group[0].groupId,
+      groupSize: group.length,
+      groupItems: group,
+      order: group[0].order
+    })
   })
 
-  // 合并：先放独立作品，再放分组（都按 order 排序）
-  const allCards = [...standalone, ...groupCards]
-  return allCards.sort((a, b) => a.order - b.order)
+  return items.sort((a, b) => a.order - b.order)
 }
 
 export default function ImageGrid({ artworks, onReorder }: Props) {
   const { isUnlocked } = useEditor()
-  const [items, setItems] = useState<Artwork[]>([])
+  const [gridItems, setGridItems] = useState<GridItem[]>([])
+  // flatItems 用于灯箱导航（所有作品扁平列表）
   const [flatItems, setFlatItems] = useState<Artwork[]>([])
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [lightboxGroup, setLightboxGroup] = useState<Artwork[] | null>(null)
-  const [lightboxGroupIndex, setLightboxGroupIndex] = useState<number>(0)
+
+  const [lightboxArtwork, setLightboxArtwork] = useState<Artwork | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number>(0)
+  const [lightboxTotal, setLightboxTotal] = useState<number>(0)
+
+  // 分组灯箱
+  const [groupItems, setGroupItems] = useState<Artwork[]>([])
+  const [groupIndex, setGroupIndex] = useState<number>(0)
+
   const draggedId = useRef<string | null>(null)
 
   useEffect(() => {
-    const grouped = groupArtworks(artworks)
-    setItems(grouped)
-    setFlatItems(artworks.sort((a, b) => a.order - b.order))
+    const items = buildGridItems(artworks)
+    setGridItems(items)
+    setFlatItems([...artworks].sort((a, b) => a.order - b.order))
   }, [artworks])
 
   // 键盘导航
   useEffect(() => {
-    if (lightboxIndex === null && lightboxGroup === null) return
+    const hasLightbox = lightboxArtwork !== null || groupItems.length > 0
+    if (!hasLightbox) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (lightboxGroup) {
+      if (groupItems.length > 0) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault()
-          setLightboxGroupIndex(prev => (prev + 1) % lightboxGroup.length)
+          setGroupIndex(prev => (prev + 1) % groupItems.length)
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          setLightboxGroupIndex(prev => (prev - 1 + lightboxGroup.length) % lightboxGroup.length)
+          setGroupIndex(prev => (prev - 1 + groupItems.length) % groupItems.length)
         } else if (e.key === 'Escape') {
-          setLightboxGroup(null)
-          setLightboxGroupIndex(0)
+          setGroupItems([])
+          setGroupIndex(0)
         }
-      } else if (lightboxIndex !== null) {
+      } else if (lightboxArtwork) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault()
-          setLightboxIndex(prev => prev !== null ? (prev + 1) % flatItems.length : 0)
+          setLightboxIndex(prev => (prev + 1) % flatItems.length)
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          setLightboxIndex(prev => prev !== null ? (prev - 1 + flatItems.length) % flatItems.length : flatItems.length - 1)
+          setLightboxIndex(prev => (prev - 1 + flatItems.length) % flatItems.length)
         } else if (e.key === 'Escape') {
-          setLightboxIndex(null)
+          setLightboxArtwork(null)
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [lightboxIndex, lightboxGroup, lightboxGroupIndex, flatItems.length])
+  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems.length])
 
-  if (items.length === 0) {
+  if (gridItems.length === 0) {
     return (
       <div className={styles.empty}>
         <span className={styles.emptyIcon}>🌷</span>
@@ -118,25 +145,26 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
       return
     }
 
-    const newItems = [...items]
-    const draggedIndex = newItems.findIndex(item => item.id === draggedId.current)
-    const targetIndex = newItems.findIndex(item => item.id === targetId)
+    const newItems = [...gridItems]
+    const draggedIdx = newItems.findIndex(item => item.groupId ? item.groupId === draggedId.current : item.artwork?.id === draggedId.current)
+    const targetIdx = newItems.findIndex(item => item.groupId ? item.groupId === targetId : item.artwork?.id === targetId)
 
-    if (draggedIndex === -1 || targetIndex === -1) return
+    if (draggedIdx === -1 || targetIdx === -1) return
 
-    const [draggedItem] = newItems.splice(draggedIndex, 1)
-    newItems.splice(targetIndex, 0, draggedItem)
+    const [draggedItem] = newItems.splice(draggedIdx, 1)
+    newItems.splice(targetIdx, 0, draggedItem)
 
-    const reordered = newItems.map((item, index) => ({
-      ...item,
-      order: index + 1
-    }))
+    // 更新 order
+    const reordered = newItems.map((item, index) => ({ ...item, order: index + 1 }))
+    setGridItems(reordered)
 
-    setItems(reordered)
     draggedId.current = null
 
     if (onReorder) {
-      onReorder(reordered)
+      const flat = reordered.flatMap(item =>
+        item.type === 'single' ? [item.artwork!] : item.groupItems!
+      )
+      onReorder(flat.map((a, i) => ({ ...a, order: i + 1 })))
     }
   }
 
@@ -144,77 +172,83 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     draggedId.current = null
   }
 
-  const closeLightbox = useCallback(() => {
-    setLightboxIndex(null)
-    setLightboxGroup(null)
-    setLightboxGroupIndex(0)
-  }, [])
+  const closeLightbox = () => {
+    setLightboxArtwork(null)
+    setGroupItems([])
+    setGroupIndex(0)
+  }
 
-  const handleCardClick = (artwork: Artwork, index: number) => {
-    if ((artwork as any).groupSize > 1) {
-      // 点击的是分组，打开组内灯箱
-      setLightboxGroup((artwork as any).groupItems)
-      setLightboxGroupIndex(0)
-    } else {
-      // 单个作品
-      setLightboxIndex(index)
+  const handleCardClick = (item: GridItem, idx: number) => {
+    if (item.type === 'group' && item.groupItems) {
+      setGroupItems(item.groupItems)
+      setGroupIndex(0)
+    } else if (item.type === 'single' && item.artwork) {
+      const flatIdx = flatItems.findIndex(a => a.id === item.artwork!.id)
+      setLightboxArtwork(item.artwork)
+      setLightboxIndex(flatIdx >= 0 ? flatIdx : 0)
+      setLightboxTotal(flatItems.length)
     }
+  }
+
+  const getItemId = (item: GridItem): string => {
+    return item.type === 'group' ? (item.groupId || '') : (item.artwork?.id || '')
   }
 
   return (
     <>
       <div className={styles.grid}>
-        {items.map((artwork, index) => (
-          <div
-            key={artwork.id}
-            className={`${styles.item} ${draggedId.current === artwork.id ? styles.dragging : ''}`}
-            style={{ animationDelay: `${index * 50}ms` }}
-            draggable={isUnlocked}
-            onDragStart={e => handleDragStart(e, artwork.id)}
-            onDragOver={e => handleDragOver(e, artwork.id)}
-            onDrop={e => handleDrop(e, artwork.id)}
-            onDragEnd={handleDragEnd}
-          >
-            <MediaCard
-              artwork={artwork}
-              onClick={() => handleCardClick(artwork, index)}
-              showDownload={isUnlocked}
-            />
-            {/* 分组数量指示 */}
-            {(artwork as any).groupSize > 1 && (
-              <div className={styles.groupBadge}>{(artwork as any).groupSize}</div>
-            )}
-          </div>
-        ))}
+        {gridItems.map((item, index) => {
+          const itemId = getItemId(item)
+          return (
+            <div
+              key={itemId || index}
+              className={`${styles.item} ${draggedId.current === itemId ? styles.dragging : ''}`}
+              style={{ animationDelay: `${index * 50}ms` }}
+              draggable={isUnlocked}
+              onDragStart={e => handleDragStart(e, itemId)}
+              onDragOver={e => handleDragOver(e, itemId)}
+              onDrop={e => handleDrop(e, itemId)}
+              onDragEnd={handleDragEnd}
+            >
+              <MediaCard
+                artwork={item.type === 'single' ? item.artwork! : item.groupItems![0]}
+                onClick={() => handleCardClick(item, index)}
+                showDownload={isUnlocked}
+              />
+              {item.type === 'group' && item.groupSize && item.groupSize > 1 && (
+                <div className={styles.groupBadge}>{item.groupSize}</div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
-      {/* 单个作品灯箱 */}
-      {lightboxIndex !== null && !lightboxGroup && (
+      {/* 单图灯箱 */}
+      {lightboxArtwork && groupItems.length === 0 && (
         <Lightbox
-          artwork={flatItems[lightboxIndex]}
+          artwork={lightboxArtwork}
           index={lightboxIndex}
           total={flatItems.length}
           onClose={closeLightbox}
-          onPrev={() => setLightboxIndex(prev => prev !== null ? (prev - 1 + flatItems.length) % flatItems.length : 0)}
-          onNext={() => setLightboxIndex(prev => prev !== null ? (prev + 1) % flatItems.length : 0)}
+          onPrev={() => setLightboxIndex(prev => (prev - 1 + flatItems.length) % flatItems.length)}
+          onNext={() => setLightboxIndex(prev => (prev + 1) % flatItems.length)}
         />
       )}
 
-      {/* 分组灯箱：竖排展示所有图片 */}
-      {lightboxGroup && (
+      {/* 分组灯箱 */}
+      {groupItems.length > 0 && (
         <GroupLightbox
-          items={lightboxGroup}
-          currentIndex={lightboxGroupIndex}
+          items={groupItems}
+          currentIndex={groupIndex}
           onClose={closeLightbox}
-          onPrev={() => setLightboxGroupIndex(prev => (prev - 1 + lightboxGroup.length) % lightboxGroup.length)}
-          onNext={() => setLightboxGroupIndex(prev => (prev + 1) % lightboxGroup.length)}
+          onPrev={() => setGroupIndex(prev => (prev - 1 + groupItems.length) % groupItems.length)}
+          onNext={() => setGroupIndex(prev => (prev + 1) % groupItems.length)}
         />
       )}
     </>
   )
 }
 
-// 灯箱组件（单图）
 function Lightbox({ artwork, index, total, onClose, onPrev, onNext }: {
   artwork: Artwork
   index: number
@@ -252,7 +286,6 @@ function Lightbox({ artwork, index, total, onClose, onPrev, onNext }: {
   )
 }
 
-// 分组灯箱：竖排展示
 function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext }: {
   items: Artwork[]
   currentIndex: number
