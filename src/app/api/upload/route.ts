@@ -11,9 +11,8 @@ function getOSSClient() {
       region: 'oss-cn-wulanchabu',
       accessKeyId: process.env.ALI_ACCESS_KEY_ID!,
       accessKeySecret: process.env.ALI_ACCESS_KEY_SECRET!,
-      bucket: 'xiaoxiao0708',
-      timeout: 120000
-    })
+      bucket: 'xiaoxiao0708'
+    } as any)
   }
   return client
 }
