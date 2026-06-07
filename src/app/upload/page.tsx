@@ -114,14 +114,11 @@ export default function UploadPage() {
     for (let i = 0; i < files.length; i++) {
       const item = files[i]
       try {
-        // 1. 获取 OSS 预签名上传 URL
+        // 1. 获取 OSS 表单上传签名
         const signRes = await fetch('/api/oss-sign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: item.file.name,
-            contentType: item.file.type
-          }),
+          body: JSON.stringify({ filename: item.file.name }),
           credentials: 'include'
         })
 
@@ -131,18 +128,23 @@ export default function UploadPage() {
           continue
         }
 
-        const { uploadUrl, objectKey } = await signRes.json()
+        const { host, objectKey, accessKeyId, policy, signature } = await signRes.json()
 
-        // 2. 浏览器直传 PUT 到 OSS（不经过 Vercel，绕过 4.5MB 限制）
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: item.file,
-          headers: {
-            'Content-Type': item.file.type
-          }
+        // 2. 浏览器直传 POST FormData 到 OSS（不经过 Vercel，绕过 4.5MB 限制）
+        const uploadFormData = new FormData()
+        uploadFormData.append('key', objectKey)
+        uploadFormData.append('OSSAccessKeyId', accessKeyId)
+        uploadFormData.append('policy', policy)
+        uploadFormData.append('signature', signature)
+        uploadFormData.append('success_action_status', '200')
+        uploadFormData.append('file', item.file)
+
+        const uploadRes = await fetch(host, {
+          method: 'POST',
+          body: uploadFormData
         })
 
-        if (!uploadRes.ok) {
+        if (!uploadRes.ok && uploadRes.status !== 204) {
           errorMessages.push(`图片 ${item.title} 上传失败 (${uploadRes.status})`)
           continue
         }
