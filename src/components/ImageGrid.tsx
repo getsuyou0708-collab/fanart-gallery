@@ -72,6 +72,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
   const [groupIndex, setGroupIndex] = useState<number>(0)
 
   const draggedId = useRef<string | null>(null)
+  const isDragging = useRef(false)
 
   useEffect(() => {
     const items = buildGridItems(artworks)
@@ -203,6 +204,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
       e.preventDefault()
       return
     }
+    isDragging.current = true
     draggedId.current = id
     e.dataTransfer.effectAllowed = 'move'
   }
@@ -218,6 +220,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     if (!isUnlocked) return
     if (!draggedId.current || draggedId.current === targetId) {
       draggedId.current = null
+      isDragging.current = false
       return
     }
 
@@ -235,6 +238,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     setGridItems(reordered)
 
     draggedId.current = null
+    isDragging.current = false
 
     if (onReorder) {
       const flat = reordered.flatMap(item =>
@@ -246,6 +250,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
 
   const handleDragEnd = () => {
     draggedId.current = null
+    isDragging.current = false
   }
 
   const closeLightbox = () => {
@@ -255,6 +260,12 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
   }
 
   const handleCardClick = (item: GridItem, idx: number) => {
+    // 如果正在拖拽，不打开灯箱
+    if (isDragging.current) {
+      isDragging.current = false
+      return
+    }
+
     if (item.type === 'group' && item.groupItems) {
       setGroupItems(item.groupItems)
       setGroupIndex(0)
