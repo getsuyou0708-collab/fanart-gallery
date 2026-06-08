@@ -2,8 +2,27 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { Artwork } from '@/lib/types'
 import { getArtworks } from '@/lib/data'
+import { supabase } from '@/lib/supabase'
+import { useEditor } from '@/contexts/EditorContext'
 import styles from './page.module.css'
 
 const OSS_BASE = 'https://xiaoxiao0708.oss-cn-shanghai.aliyuncs.com'
@@ -13,10 +32,43 @@ function getImageUrl(filename: string): string {
   return `${OSS_BASE}/${filename}`
 }
 
+// 可排序的图片项组件
+function SortableImage({ img, onClick }: { img: Artwork; onClick: () => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: img.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={styles.imageItem}
+      {...attributes}
+      {...listeners}
+      onClick={onClick}
+    >
+      <img src={getImageUrl(img.filename)} alt={img.title} />
+    </div>
+  )
+}
+
 export default function ArtworkDetailPage() {
   const router = useRouter()
   const params = useParams()
   const artworkId = params.id as string
+  const { isUnlocked } = useEditor()
 
   const [artwork, setArtwork] = useState<Artwork | null>(null)
   const [allArtworks, setAllArtworks] = useState<Artwork[]>([])
@@ -24,6 +76,18 @@ export default function ArtworkDetailPage() {
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   // 获取当前作品和所有作品
   useEffect(() => {
@@ -84,6 +148,45 @@ export default function ArtworkDetailPage() {
     }
   }, [lightboxIndex, groupImages.length])
 
+  // 拖拽结束处理
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over || active.id === over.id) return
+
+    const oldIndex = groupImages.findIndex(img => img.id === active.id)
+    const newIndex = groupImages.findIndex(img => img.id === over.id)
+
+    if (oldIndex === -1 || newIndex === -1) return
+
+    // 立即更新 UI
+    const newOrder = arrayMove(groupImages, oldIndex, newIndex)
+    setGroupImages(newOrder)
+    setLightboxIndex(newIndex)
+
+    // 保存到数据库
+    try {
+      const updates = newOrder.map((img, index) => ({
+        id: img.id,
+        order: index + 1,
+      }))
+
+      const { error } = await supabase
+        .from('artworks')
+        .upsert(updates.map(u => ({ id: u.id, order: u.order })))
+
+      if (error) {
+        console.error('Failed to save order:', error)
+        setSaveError('顺序保存失败，请刷新页面')
+        setTimeout(() => setSaveError(null), 3000)
+      }
+    } catch (e) {
+      console.error('Failed to save order:', e)
+      setSaveError('顺序保存失败，请刷新页面')
+      setTimeout(() => setSaveError(null), 3000)
+    }
+  }
+
   // 键盘导航
   useEffect(() => {
     if (!artwork) return
@@ -91,7 +194,6 @@ export default function ArtworkDetailPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const idx = allArtworks.findIndex(a => a.id === artworkId)
       if (isLightboxOpen) {
-        // 灯箱打开时：上下箭头切换图片，左右箭头切换作品
         if (e.key === 'ArrowUp') {
           e.preventDefault()
           if (lightboxIndex > 0) {
@@ -118,7 +220,6 @@ export default function ArtworkDetailPage() {
           setIsLightboxOpen(false)
         }
       } else {
-        // 灯箱关闭时：左右箭头切换作品
         if (e.key === 'ArrowLeft') {
           e.preventDefault()
           if (idx > 0) {
@@ -168,6 +269,11 @@ export default function ArtworkDetailPage() {
 
   return (
     <div className={styles.container}>
+      {/* 保存失败提示 */}
+      {saveError && (
+        <div className={styles.saveError}>{saveError}</div>
+      )}
+
       {/* 顶部导航 */}
       <div className={styles.header}>
         <button
@@ -187,18 +293,34 @@ export default function ArtworkDetailPage() {
         </button>
       </div>
 
-      {/* 图片网格 */}
-      <div className={styles.imageGrid}>
-        {groupImages.map((img, index) => (
-          <div
-            key={img.id}
-            className={styles.imageItem}
-            onClick={() => openLightbox(index)}
-          >
-            <img src={getImageUrl(img.filename)} alt={img.title} />
+      {/* 图片网格 - 可拖拽排序 */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={groupImages.map(img => img.id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          <div className={styles.imageGrid}>
+            {groupImages.map((img, index) => (
+              <SortableImage
+                key={img.id}
+                img={img}
+                onClick={() => openLightbox(index)}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
+
+      {/* 拖拽提示 */}
+      {isUnlocked && groupImages.length > 1 && (
+        <div className={styles.dragHint}>
+          💡 拖拽图片可以调整顺序
+        </div>
+      )}
 
       {/* 图片计数器 */}
       {groupImages.length > 1 && (
