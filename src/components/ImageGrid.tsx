@@ -319,10 +319,10 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
           items={groupItems}
           currentIndex={groupIndex}
           onClose={closeLightbox}
-          onPrev={goToGroupPrev}
-          onNext={goToGroupNext}
-          canPrev={canGroupNavigatePrev}
-          canNext={canGroupNavigateNext}
+          onPrev={goToPrev}
+          onNext={goToNext}
+          canPrev={canNavigatePrev}
+          canNext={canNavigateNext}
         />
       )}
     </>
