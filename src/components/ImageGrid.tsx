@@ -79,44 +79,68 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     setFlatItems([...artworks].sort((a, b) => a.order - b.order))
   }, [artworks])
 
-  // 导航函数（不循环）
-  const canNavigatePrev = lightboxIndex > 0
-  const canNavigateNext = lightboxIndex < flatItems.length - 1
-  const canGroupNavigatePrev = groupIndex > 0
-  const canGroupNavigateNext = groupIndex < groupItems.length - 1
+  // 导航函数
+  // 如果有分组（多图），在分组内导航；否则在所有作品中导航
+  const canNavigatePrev = groupItems.length > 0
+    ? groupIndex > 0
+    : lightboxIndex > 0
+  const canNavigateNext = groupItems.length > 0
+    ? groupIndex < groupItems.length - 1
+    : lightboxIndex < flatItems.length - 1
 
   const goToPrev = useCallback(() => {
-    if (canNavigatePrev) setLightboxIndex(prev => prev - 1)
-  }, [canNavigatePrev])
+    if (groupItems.length > 0 && groupIndex > 0) {
+      setGroupIndex(prev => prev - 1)
+    } else if (lightboxIndex > 0) {
+      const prevArtwork = flatItems[lightboxIndex - 1]
+      setLightboxArtwork(prevArtwork)
+      setLightboxIndex(prev => prev - 1)
+      if (prevArtwork.groupId) {
+        const group = flatItems.filter(a => a.groupId === prevArtwork.groupId)
+        group.sort((a, b) => a.order - b.order)
+        setGroupItems(group)
+        setGroupIndex(0)
+      } else {
+        setGroupItems([])
+      }
+    }
+  }, [groupItems, groupIndex, lightboxIndex, flatItems])
 
   const goToNext = useCallback(() => {
-    if (canNavigateNext) setLightboxIndex(prev => prev + 1)
-  }, [canNavigateNext])
-
-  const goToGroupPrev = useCallback(() => {
-    if (canGroupNavigatePrev) setGroupIndex(prev => prev - 1)
-  }, [canGroupNavigatePrev])
-
-  const goToGroupNext = useCallback(() => {
-    if (canGroupNavigateNext) setGroupIndex(prev => prev + 1)
-  }, [canGroupNavigateNext])
+    if (groupItems.length > 0 && groupIndex < groupItems.length - 1) {
+      setGroupIndex(prev => prev + 1)
+    } else if (lightboxIndex < flatItems.length - 1) {
+      const nextArtwork = flatItems[lightboxIndex + 1]
+      setLightboxArtwork(nextArtwork)
+      setLightboxIndex(prev => prev + 1)
+      if (nextArtwork.groupId) {
+        const group = flatItems.filter(a => a.groupId === nextArtwork.groupId)
+        group.sort((a, b) => a.order - b.order)
+        setGroupItems(group)
+        setGroupIndex(0)
+      } else {
+        setGroupItems([])
+      }
+    }
+  }, [groupItems, groupIndex, lightboxIndex, flatItems])
 
   // 键盘导航
-  // ← / → 箭头：切换上一个/下一个作品
+  // ← / → 箭头：切换图片（在分组内）或作品
   // ↑ / ↓ 箭头：仅在分组灯箱中切换图片
   useEffect(() => {
     const hasLightbox = lightboxArtwork !== null || groupItems.length > 0
     if (!hasLightbox) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 左/右箭头：切换作品
+      // 左/右箭头：切换图片或作品
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        if (lightboxIndex > 0) {
+        if (groupItems.length > 0 && groupIndex > 0) {
+          setGroupIndex(prev => prev - 1)
+        } else if (lightboxIndex > 0) {
           const prevArtwork = flatItems[lightboxIndex - 1]
           setLightboxArtwork(prevArtwork)
-          setLightboxIndex(lightboxIndex - 1)
-          // 如果是分组作品，打开分组灯箱
+          setLightboxIndex(prev => prev - 1)
           if (prevArtwork.groupId) {
             const group = flatItems.filter(a => a.groupId === prevArtwork.groupId)
             group.sort((a, b) => a.order - b.order)
@@ -128,11 +152,12 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
         }
       } else if (e.key === 'ArrowRight') {
         e.preventDefault()
-        if (lightboxIndex < flatItems.length - 1) {
+        if (groupItems.length > 0 && groupIndex < groupItems.length - 1) {
+          setGroupIndex(prev => prev + 1)
+        } else if (lightboxIndex < flatItems.length - 1) {
           const nextArtwork = flatItems[lightboxIndex + 1]
           setLightboxArtwork(nextArtwork)
-          setLightboxIndex(lightboxIndex + 1)
-          // 如果是分组作品，打开分组灯箱
+          setLightboxIndex(prev => prev + 1)
           if (nextArtwork.groupId) {
             const group = flatItems.filter(a => a.groupId === nextArtwork.groupId)
             group.sort((a, b) => a.order - b.order)
@@ -162,7 +187,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [lightboxArtwork, groupItems, lightboxIndex, flatItems])
+  }, [lightboxArtwork, groupItems, groupIndex, lightboxIndex, flatItems])
 
   if (gridItems.length === 0) {
     return (
@@ -326,14 +351,20 @@ function Lightbox({ artwork, index, total, onClose, onPrev, onNext, canPrev, can
         <>
           <button
             className={`${styles.lightboxPrev} ${!canPrev ? styles.disabled : ''}`}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onPrev() }}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              onPrev()
+            }}
             disabled={!canPrev}
           >❮</button>
           <button
             className={`${styles.lightboxNext} ${!canNext ? styles.disabled : ''}`}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onNext() }}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              onNext()
+            }}
             disabled={!canNext}
           >❯</button>
           <div className={styles.lightboxCounter}>{index + 1} / {total}</div>
@@ -428,14 +459,20 @@ function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext, canPrev, 
         <>
           <button
             className={`${styles.lightboxPrev} ${!canPrev ? styles.disabled : ''}`}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onPrev() }}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              onPrev()
+            }}
             disabled={!canPrev}
           >❮</button>
           <button
             className={`${styles.lightboxNext} ${!canNext ? styles.disabled : ''}`}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onNext() }}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              onNext()
+            }}
             disabled={!canNext}
           >❯</button>
           <div className={styles.lightboxCounter}>{currentIndex + 1} / {items.length}</div>
