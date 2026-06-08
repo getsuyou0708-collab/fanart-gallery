@@ -97,42 +97,32 @@
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  width: 60px;
-  height: 60px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.9);
   color: black;
-  font-size: 24px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100000;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 
 .lightboxPrev {
-  left: 16px;
+  left: 12px;
 }
 
 .lightboxNext {
-  right: 16px;
+  right: 12px;
 }
 
 .lightboxPrev:active,
 .lightboxNext:active {
-  transform: translateY(-50%) scale(0.95);
   background: white;
-}
-
-.lightboxPrev:hover,
-.lightboxNext:hover {
-  background: white;
-  transform: translateY(-50%) scale(1.05);
 }
 
 .lightboxPrev.disabled,

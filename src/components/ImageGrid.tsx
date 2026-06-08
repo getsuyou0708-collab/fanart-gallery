@@ -326,11 +326,13 @@ function Lightbox({ artwork, index, total, onClose, onPrev, onNext, canPrev, can
         <>
           <button
             className={`${styles.lightboxPrev} ${!canPrev ? styles.disabled : ''}`}
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); onPrev() }}
             disabled={!canPrev}
           >❮</button>
           <button
             className={`${styles.lightboxNext} ${!canNext ? styles.disabled : ''}`}
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); onNext() }}
             disabled={!canNext}
           >❯</button>
@@ -426,11 +428,13 @@ function GroupLightbox({ items, currentIndex, onClose, onPrev, onNext, canPrev, 
         <>
           <button
             className={`${styles.lightboxPrev} ${!canPrev ? styles.disabled : ''}`}
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); onPrev() }}
             disabled={!canPrev}
           >❮</button>
           <button
             className={`${styles.lightboxNext} ${!canNext ? styles.disabled : ''}`}
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); onNext() }}
             disabled={!canNext}
           >❯</button>
