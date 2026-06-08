@@ -73,6 +73,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
 
   const draggedId = useRef<string | null>(null)
   const isDragging = useRef(false)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
 
   useEffect(() => {
     const items = buildGridItems(artworks)
@@ -213,10 +214,12 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
     if (!isUnlocked) return
     e.preventDefault()
     if (draggedId.current === id) return
+    setDragOverId(id)
   }
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault()
+    setDragOverId(null)
     if (!isUnlocked) return
     if (!draggedId.current || draggedId.current === targetId) {
       draggedId.current = null
@@ -249,6 +252,7 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
   }
 
   const handleDragEnd = () => {
+    setDragOverId(null)
     draggedId.current = null
     isDragging.current = false
   }
@@ -289,7 +293,11 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
           return (
             <div
               key={itemId || index}
-              className={`${styles.item} ${draggedId.current === itemId ? styles.dragging : ''}`}
+              className={`
+                ${styles.item}
+                ${draggedId.current === itemId ? styles.dragging : ''}
+                ${dragOverId === itemId && draggedId.current !== itemId ? styles.dragOver : ''}
+              `}
               style={{ animationDelay: `${index * 50}ms` }}
               draggable={isUnlocked}
               onDragStart={e => handleDragStart(e, itemId)}

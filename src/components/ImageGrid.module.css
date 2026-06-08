@@ -23,6 +23,11 @@
   transform: scale(0.98);
 }
 
+.item.dragOver {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
 @keyframes fadeUp {
   from {
     opacity: 0;
