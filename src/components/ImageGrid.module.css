@@ -9,9 +9,8 @@
   min-width: 200px;
   max-width: calc(25% - 16px);
   animation: fadeUp 0.4s ease forwards;
-  opacity: 0;
   cursor: grab;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: box-shadow 0.15s ease;
 }
 
 .item:active {
@@ -21,11 +20,12 @@
 .item.dragging {
   opacity: 0.5;
   transform: scale(0.98);
+  transition: none;
 }
 
 .item.dragOver {
-  transform: scale(1.05);
   box-shadow: 0 0 0 3px var(--accent);
+  transition: box-shadow 0.1s ease;
 }
 
 @keyframes fadeUp {

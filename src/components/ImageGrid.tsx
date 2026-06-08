@@ -298,7 +298,10 @@ export default function ImageGrid({ artworks, onReorder }: Props) {
                 ${draggedId.current === itemId ? styles.dragging : ''}
                 ${dragOverId === itemId && draggedId.current !== itemId ? styles.dragOver : ''}
               `}
-              style={{ animationDelay: `${index * 50}ms` }}
+              style={{
+                animationDelay: `${index * 50}ms`,
+                willChange: draggedId.current === itemId ? 'transform, opacity' : 'auto'
+              }}
               draggable={isUnlocked}
               onDragStart={e => handleDragStart(e, itemId)}
               onDragOver={e => handleDragOver(e, itemId)}
