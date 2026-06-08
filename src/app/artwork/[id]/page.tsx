@@ -51,23 +51,25 @@ export default function ArtworkDetailPage() {
 
   // 计算当前作品在列表中的索引
   const currentIndex = allArtworks.findIndex(a => a.id === artworkId)
-  const prevArtwork = currentIndex > 0 ? allArtworks[currentIndex - 1] : null
-  const nextArtwork = currentIndex < allArtworks.length - 1 ? allArtworks[currentIndex + 1] : null
+  const hasPrev = currentIndex > 0
+  const hasNext = currentIndex < allArtworks.length - 1
 
   // 导航到上一个/下一个作品
   const goToPrevArtwork = useCallback(() => {
-    if (prevArtwork) {
+    const idx = allArtworks.findIndex(a => a.id === artworkId)
+    if (idx > 0) {
       setIsLightboxOpen(false)
-      router.push(`/artwork/${prevArtwork.id}`)
+      router.push(`/artwork/${allArtworks[idx - 1].id}`)
     }
-  }, [prevArtwork, router])
+  }, [allArtworks, artworkId, router])
 
   const goToNextArtwork = useCallback(() => {
-    if (nextArtwork) {
+    const idx = allArtworks.findIndex(a => a.id === artworkId)
+    if (idx >= 0 && idx < allArtworks.length - 1) {
       setIsLightboxOpen(false)
-      router.push(`/artwork/${nextArtwork.id}`)
+      router.push(`/artwork/${allArtworks[idx + 1].id}`)
     }
-  }, [nextArtwork, router])
+  }, [allArtworks, artworkId, router])
 
   // 灯箱内切换图片
   const goToPrevImage = useCallback(() => {
@@ -87,6 +89,7 @@ export default function ArtworkDetailPage() {
     if (!artwork) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const idx = allArtworks.findIndex(a => a.id === artworkId)
       if (isLightboxOpen) {
         // 灯箱打开时：上下箭头切换图片，左右箭头切换作品
         if (e.key === 'ArrowUp') {
@@ -101,15 +104,15 @@ export default function ArtworkDetailPage() {
           }
         } else if (e.key === 'ArrowLeft') {
           e.preventDefault()
-          if (prevArtwork) {
+          if (idx > 0) {
             setIsLightboxOpen(false)
-            router.push(`/artwork/${prevArtwork.id}`)
+            router.push(`/artwork/${allArtworks[idx - 1].id}`)
           }
         } else if (e.key === 'ArrowRight') {
           e.preventDefault()
-          if (nextArtwork) {
+          if (idx >= 0 && idx < allArtworks.length - 1) {
             setIsLightboxOpen(false)
-            router.push(`/artwork/${nextArtwork.id}`)
+            router.push(`/artwork/${allArtworks[idx + 1].id}`)
           }
         } else if (e.key === 'Escape') {
           setIsLightboxOpen(false)
@@ -118,13 +121,13 @@ export default function ArtworkDetailPage() {
         // 灯箱关闭时：左右箭头切换作品
         if (e.key === 'ArrowLeft') {
           e.preventDefault()
-          if (prevArtwork) {
-            router.push(`/artwork/${prevArtwork.id}`)
+          if (idx > 0) {
+            router.push(`/artwork/${allArtworks[idx - 1].id}`)
           }
         } else if (e.key === 'ArrowRight') {
           e.preventDefault()
-          if (nextArtwork) {
-            router.push(`/artwork/${nextArtwork.id}`)
+          if (idx >= 0 && idx < allArtworks.length - 1) {
+            router.push(`/artwork/${allArtworks[idx + 1].id}`)
           }
         }
       }
@@ -132,7 +135,7 @@ export default function ArtworkDetailPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [artwork, isLightboxOpen, lightboxIndex, groupImages.length, prevArtwork, nextArtwork, router])
+  }, [artwork, isLightboxOpen, lightboxIndex, groupImages.length, allArtworks, artworkId, router])
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index)
@@ -168,17 +171,17 @@ export default function ArtworkDetailPage() {
       {/* 顶部导航 */}
       <div className={styles.header}>
         <button
-          className={`${styles.navBtn} ${!prevArtwork ? styles.disabled : ''}`}
+          className={`${styles.navBtn} ${!hasPrev ? styles.disabled : ''}`}
           onClick={goToPrevArtwork}
-          disabled={!prevArtwork}
+          disabled={!hasPrev}
         >
           ← 上一个
         </button>
         <h1 className={styles.title}>{artwork.title}</h1>
         <button
-          className={`${styles.navBtn} ${!nextArtwork ? styles.disabled : ''}`}
+          className={`${styles.navBtn} ${!hasNext ? styles.disabled : ''}`}
           onClick={goToNextArtwork}
-          disabled={!nextArtwork}
+          disabled={!hasNext}
         >
           下一个 →
         </button>
@@ -234,13 +237,13 @@ export default function ArtworkDetailPage() {
           <button className={styles.lightboxClose} onClick={closeLightbox}>✕</button>
 
           {/* 左右箭头 - 切换作品 */}
-          {prevArtwork && (
+          {hasPrev && (
             <button
               className={styles.lightboxPrevArtwork}
               onClick={e => { e.stopPropagation(); goToPrevArtwork() }}
             >❮</button>
           )}
-          {nextArtwork && (
+          {hasNext && (
             <button
               className={styles.lightboxNextArtwork}
               onClick={e => { e.stopPropagation(); goToNextArtwork() }}
